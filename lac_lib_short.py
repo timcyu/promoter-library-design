@@ -113,6 +113,8 @@ if __name__ == '__main__':
     library_names = []
 
     # Forward and Reverse primers for cloning purposes. Restriction sites included
+    fwd_primer = "ACCTGTAATTCCAAGCGTCTCGAG"
+    rev_primer = "GCTAGCGGTGTTTAGTTAGCATCC"
 
     count = 0
     for i, m in zip(totUpstream, totUpstream_names):
