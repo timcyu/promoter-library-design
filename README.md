@@ -1,4 +1,4 @@
-# ucla-igem
+# UCLA iGEM 2018
 UCLA International Genetically Engineered Machines Team 2018
 Kosuri Lab, UCLA
 
@@ -23,5 +23,5 @@ python generate_controls.py synthetic_promoter.csv fwd_primers.fasta rev_primers
 ```
 
 ## Contributors
-* **Timothy Yu**
-* **Members of the Kosuri Lab**
+Timothy Yu
+Members of UCLA iGEM and the Kosuri Lab
