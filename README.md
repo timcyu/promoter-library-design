@@ -1,6 +1,5 @@
 # UCLA iGEM 2018
-UCLA International Genetically Engineered Machines Team 2018
-Kosuri Lab, UCLA
+UCLA International Genetically Engineered Machines Team 2018 & Kosuri Lab, UCLA
 
 Promoters are the key drivers of gene expression. We are interested in manipulating operator sequences in the lac
 inducible promoter. 
