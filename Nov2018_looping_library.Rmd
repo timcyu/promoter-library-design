@@ -1,0 +1,732 @@
+---
+title: "Nov2018_looping_library"
+output: html_document
+---
+
+```{r, include=F, echo = F}
+
+setwd("~/Desktop/induce_library/raw_data/")
+
+#install.packages("ggjoy")
+#install.packages("RInside") #THis is for ggjoy
+#install.packages("purrr") #This is for ggjoy
+#install.packages("plotly")
+
+#theme_update(text=(theme_grey()+theme(text = element_text(family = "sans")))$text )
+library(plyr)
+library("ggplot2")
+library("dplyr")
+library("wesanderson")
+names(wes_palettes)
+library("tidyr")
+library("ggjoy")
+library("reshape2")
+require(cowplot)
+library('RInside')
+library("stringr")
+library("plotly")
+
+options(stringsAsFactors = F)
+
+# MODIFIED VERSION (NO NORMALIZATION) FOR LOOKING AT BARCODE READS
+filelist = list.files(pattern = 'fLP3*') # change prefix for all barcode counts
+for(i in filelist) {
+  x <- read.table(i, col.names=c(i, 'barcode'), header = F)
+  assign(i,x) 
+}
+
+# function that creates dataframe with 3 columns. 1 with raw reads, 1 normalized, 1 barcode.
+make_normalized_df <- function(df) {
+  norm = "normalized_"
+  new_name = paste(norm, deparse(substitute(df)), sep = '')
+  df <- df %>%
+    mutate(temp_name = 1000000*df[[1]]/sum(df[[1]]))
+  names(df)[names(df) == 'temp_name'] = new_name
+  return(df)
+}
+
+fLP3_LacZ_Induced_DNA_1.txt <- make_normalized_df(fLP3_LacZ_Induced_DNA_1.txt)
+fLP3_LacZ_Induced_DNA_2.txt <- make_normalized_df(fLP3_LacZ_Induced_DNA_2.txt)
+fLP3_LacZ_Induced_RNA_1.txt <- make_normalized_df(fLP3_LacZ_Induced_RNA_1.txt)
+fLP3_LacZ_Induced_RNA_2.txt <- make_normalized_df(fLP3_LacZ_Induced_RNA_2.txt)
+
+fLP3_LacZ_UnInduced_DNA_1.txt <- make_normalized_df(fLP3_LacZ_UnInduced_DNA_1.txt)
+fLP3_LacZ_UnInduced_DNA_2.txt <- make_normalized_df(fLP3_LacZ_UnInduced_DNA_2.txt)
+fLP3_LacZ_UnInduced_RNA_1.txt <- make_normalized_df(fLP3_LacZ_UnInduced_RNA_1.txt)
+fLP3_LacZ_UnInduced_RNA_2.txt <- make_normalized_df(fLP3_LacZ_UnInduced_RNA_2.txt)
+
+
+var_mapped_count <- function(df1, df2) {
+  combined <- left_join(df1, df2, by = c("barcode")) 
+  total <- df2 %>%
+    summarize(n())
+  retained <- combined %>%
+    summarize(n())
+  return(retained/total)
+}
+
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_Induced_DNA_1.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_Induced_DNA_2.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_Induced_RNA_1.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_Induced_RNA_2.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_UnInduced_DNA_1.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_UnInduced_DNA_2.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_UnInduced_RNA_1.txt)
+var_mapped_count(barcode_stats_loop, fLP3_LacZ_UnInduced_RNA_2.txt)
+
+```
+
+
+```{r setup, include=FALSE}
+
+fLP3_loop <- full_join(fLP3_LacZ_Induced_DNA_1.txt, fLP3_LacZ_Induced_DNA_2.txt, by='barcode') %>% # change .txt files to files you've read in
+  full_join(., fLP3_LacZ_Induced_RNA_1.txt, by='barcode') %>%
+  full_join(., fLP3_LacZ_Induced_RNA_2.txt, by='barcode') %>%
+  full_join(., fLP3_LacZ_UnInduced_DNA_1.txt, by='barcode') %>%
+  full_join(., fLP3_LacZ_UnInduced_DNA_2.txt, by='barcode') %>%
+  full_join(., fLP3_LacZ_UnInduced_RNA_1.txt, by='barcode') %>%
+  full_join(., fLP3_LacZ_UnInduced_RNA_2.txt, by='barcode')
+
+names(fLP3_loop) = sub(".txt","", names(fLP3_loop)) #rename all colummns that were named after text ile temp <- Loop_Data[c(-1,-5)]
+
+rm(list = c(filelist))
+rm(x)
+```
+
+```{r}
+#Get expression of variants from barcode data and create boxplots to represent it
+
+barcode_stats_loop <- read.table("raw_data/LacZ_mapping_barcode_statistics.txt", header = T)
+mapped_barcodes <- barcode_stats_loop[!is.na(barcode_stats_loop$most_common),] # removed unmapped
+Compare_barcode_Reps <- left_join(mapped_barcodes, fLP3_loop, by ='barcode')
+```
+
+```{r}
+#plot reads per barcode for each sample
+
+filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_Induced_DNA_1)) %>%
+  summarize(median(fLP3_LacZ_Induced_DNA_1))
+
+
+ggplot(data = NULL, aes(x = '', y = NULL)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_Induced_DNA_1)),
+                             aes(x = 'fLP3_LacZ_Induced_DNA_1', 
+                                 y = fLP3_LacZ_Induced_DNA_1)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_Induced_DNA_2)), aes(x = 'fLP3_LacZ_Induced_DNA_2', y = fLP3_LacZ_Induced_DNA_2)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_UnInduced_DNA_1)), aes(x = 'fLP3_LacZ_UnInduced_DNA_1', y = fLP3_LacZ_UnInduced_DNA_1)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_UnInduced_DNA_2)), aes(x = 'fLP3_LacZ_UnInduced_DNA_2', y = fLP3_LacZ_UnInduced_DNA_2)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_Induced_RNA_1)), aes(x = 'fLP3_LacZ_Induced_RNA_1', y = fLP3_LacZ_Induced_RNA_1)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_Induced_RNA_2)), aes(x = 'fLP3_LacZ_Induced_RNA_2', y = fLP3_LacZ_Induced_RNA_2)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_UnInduced_RNA_1)), aes(x = 'fLP3_LacZ_UnInduced_RNA_1', y = fLP3_LacZ_UnInduced_RNA_1)) +
+  geom_boxplot(data = filter(Compare_barcode_Reps, !is.na(fLP3_LacZ_UnInduced_RNA_2)), aes(x = 'fLP3_LacZ_UnInduced_RNA_2', y = fLP3_LacZ_UnInduced_RNA_2)) +
+  xlab('') + ylab('reads per barcode') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_y_log10(breaks = c(1, 10, 100, 1000, 10000, 100000, 1000000))
+
+```
+
+```{r}
+# Get dataframe Compare_barcode_Reps with information to get reads per barcode, and barcodes per variant
+
+Compare_barcode_Reps[is.na(Compare_barcode_Reps)] <- 0
+temp <- Compare_barcode_Reps 
+#%>% filter(num_reads > 7) # FILTER NUMBER OF READS
+
+a <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_Induced_DNA_1 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+b <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_Induced_DNA_2 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+c <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_Induced_RNA_1 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+d <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_Induced_RNA_2 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+e <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_UnInduced_DNA_1 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+f <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_UnInduced_DNA_2 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+g <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_UnInduced_RNA_1 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+  
+h <- Compare_barcode_Reps %>%
+  filter(fLP3_LacZ_UnInduced_RNA_2 > 0) %>%
+  group_by(most_common) %>%
+  summarize(barcodes = n())
+
+rm(a,b,c, d, e, f, g, h)
+
+```
+
+```{r}
+# plot barcodes per variant for each sample
+ggplot(data = NULL, aes(x = '', y = barcodes)) +
+  geom_boxplot(data = a, aes(x = 'fLP3_LacZ_Induced_DNA_1')) +
+  geom_boxplot(data = b, aes(x = 'fLP3_LacZ_Induced_DNA_2')) +
+  geom_boxplot(data = c, aes(x = 'fLP3_LacZ_Induced_RNA_1')) +
+  geom_boxplot(data = d, aes(x = 'fLP3_LacZ_Induced_RNA_2')) +
+  geom_boxplot(data = e, aes(x = 'fLP3_LacZ_UnInduced_DNA_1')) +
+  geom_boxplot(data = f, aes(x = 'fLP3_LacZ_UnInduced_DNA_2')) +
+  geom_boxplot(data = g, aes(x = 'fLP3_LacZ_UnInduced_RNA_1')) +
+  geom_boxplot(data = h, aes(x = 'fLP3_LacZ_UnInduced_RNA_2')) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Barcodes per Variant") + scale_y_continuous(limits = c(0,20))
+
+
+```
+
+
+```{r}
+# filter out any expression of 0
+#temp <- filter(temp, normalized_fLP3_LacZ_Induced_DNA_1 > 0 | normalized_fLP3_LacZ_Induced_DNA_2 > 0 | normalized_fLP3_LacZ_UnInduced_DNA_1 > 0 | normalized_fLP3_LacZ_UnInduced_DNA_2 > 0)
+
+sum_var <- function(df) {
+  uninduced <- df %>%
+    select(most_common, normalized_fLP3_LacZ_UnInduced_DNA_1, normalized_fLP3_LacZ_UnInduced_DNA_2, normalized_fLP3_LacZ_UnInduced_RNA_1,
+           normalized_fLP3_LacZ_UnInduced_RNA_2) %>%
+    filter(normalized_fLP3_LacZ_UnInduced_DNA_1 > 0 & 
+             normalized_fLP3_LacZ_UnInduced_DNA_2 > 0) %>%
+    group_by(most_common) %>%
+    mutate(num_barcodes = n()) %>%
+    filter(num_barcodes > 2) %>%
+    mutate(DNA_UnInduced_avg = mean(sum(normalized_fLP3_LacZ_UnInduced_DNA_1), sum(normalized_fLP3_LacZ_UnInduced_DNA_2))) %>%
+    mutate(RNA_exp_UnInduced_1 = sum(normalized_fLP3_LacZ_UnInduced_RNA_1)/(DNA_UnInduced_avg),
+    RNA_exp_UnInduced_2 = sum(normalized_fLP3_LacZ_UnInduced_RNA_2)/(DNA_UnInduced_avg)) %>%
+    ungroup() %>%
+    select(-normalized_fLP3_LacZ_UnInduced_DNA_1, -normalized_fLP3_LacZ_UnInduced_DNA_2, -normalized_fLP3_LacZ_UnInduced_RNA_1, -normalized_fLP3_LacZ_UnInduced_RNA_2) %>%
+    distinct()
+  
+ induced <- df %>%
+    select(most_common, normalized_fLP3_LacZ_Induced_DNA_1, normalized_fLP3_LacZ_Induced_DNA_2, normalized_fLP3_LacZ_Induced_RNA_1,
+           normalized_fLP3_LacZ_Induced_RNA_2) %>%
+    filter(normalized_fLP3_LacZ_Induced_DNA_1 > 0 & 
+             normalized_fLP3_LacZ_Induced_DNA_2 > 0) %>%
+    group_by(most_common) %>%
+    mutate(num_barcodes = n()) %>%
+    filter(num_barcodes > 2) %>%
+    mutate(DNA_Induced_avg = mean(sum(normalized_fLP3_LacZ_Induced_DNA_1), sum(normalized_fLP3_LacZ_Induced_DNA_2))) %>%
+    mutate(RNA_exp_Induced_1 = sum(normalized_fLP3_LacZ_Induced_RNA_1)/(DNA_Induced_avg),
+    RNA_exp_Induced_2 = sum(normalized_fLP3_LacZ_Induced_RNA_2)/(DNA_Induced_avg)) %>%
+    ungroup() %>%
+    select(-normalized_fLP3_LacZ_Induced_DNA_1, -normalized_fLP3_LacZ_Induced_DNA_2, -normalized_fLP3_LacZ_Induced_RNA_1, -normalized_fLP3_LacZ_Induced_RNA_2) %>%
+    distinct()
+ 
+ inner_join(induced, uninduced, by = 'most_common', suffix = c('_ind', '_unind'))
+}
+
+mean_exp_master <- sum_var(temp)
+
+    
+# Experimenting with using Median and Average 
+
+### MEAN (no filtering yet)
+#mean_exp_master <- temp %>% group_by(most_common) %>%
+#  filter(sum(normalized_fLP3_LacZ_Induced_DNA_1) > 0 & sum(normalized_fLP3_LacZ_Induced_DNA_2) > 0 & sum(normalized_fLP3_LacZ_UnInduced_DNA_1) > 0 & sum(normalized_fLP3_LacZ_UnInduced_DNA_2) > 0) %>% 
+#  mutate(num_barcodes = n()) %>%
+#  filter(num_barcodes > 2) %>%
+#  mutate(DNA_Induced_sum_avg = mean(sum(normalized_fLP3_LacZ_Induced_DNA_1), sum(normalized_fLP3_LacZ_Induced_DNA_2)),
+#         DNA_UnInduced_sum_avg = mean(sum(normalized_fLP3_LacZ_UnInduced_DNA_1), sum(normalized_fLP3_LacZ_UnInduced_DNA_2))) %>%
+#  mutate(RNA_exp_Induced_1 = sum(normalized_fLP3_LacZ_Induced_RNA_1)/(sum(normalized_fLP3_LacZ_Induced_DNA_1)),
+#         RNA_exp_Induced_2 = sum(normalized_fLP3_LacZ_Induced_RNA_2)/(sum(normalized_fLP3_LacZ_Induced_DNA_2)),
+#         RNA_exp_UnInduced_1 = sum(normalized_fLP3_LacZ_UnInduced_RNA_1)/(sum(normalized_fLP3_LacZ_UnInduced_DNA_1)),
+#         RNA_exp_UnInduced_2 = sum(normalized_fLP3_LacZ_UnInduced_RNA_2)/(sum(normalized_fLP3_LacZ_UnInduced_DNA_2)),
+#         DNA_Induced_sum = sum(normalized_fLP3_LacZ_Induced_DNA_1) + sum(normalized_fLP3_LacZ_Induced_DNA_2),
+#         DNA_UnInduced_sum = sum(normalized_fLP3_LacZ_UnInduced_DNA_1) + sum(normalized_fLP3_LacZ_UnInduced_DNA_2),
+#         RNA_exp_Induced_12 = (RNA_exp_Induced_1 + RNA_exp_Induced_2)/2,
+#         RNA_exp_UnInduced_12 = (RNA_exp_UnInduced_1 + RNA_exp_UnInduced_2)/2) %>%
+#  #filter(RNA_exp_Induced_1 > 0 & RNA_exp_Induced_2 > 0 & RNA_exp_UnInduced_1 > 0 & RNA_exp_UnInduced_2 > 0 & RNA_exp_Induced_12 > 0 & RNA_exp_UnInduced_12 > 0) %>%
+#  ungroup() %>% 
+#  select(most_common, RNA_exp_Induced_1, RNA_exp_Induced_2, RNA_exp_UnInduced_1, RNA_exp_UnInduced_2, RNA_exp_Induced_12, RNA_exp_UnInduced_12, DNA_Induced_sum, DNA_UnInduced_sum, num_barcodes) %>% 
+#  distinct()
+
+### MEDIAN 
+
+induced_df <- select(temp, -starts_with("normalized_fLP3_LacZ_UnInduced"))
+uninduced_df <- select(temp, -starts_with("normalized_fLP3_LacZ_Induced"))
+
+library(data.table)
+induced_df <- setnames(induced_df, old=c("normalized_fLP3_LacZ_Induced_DNA_1","normalized_fLP3_LacZ_Induced_DNA_2", "normalized_fLP3_LacZ_Induced_RNA_1", "normalized_fLP3_LacZ_Induced_RNA_2"), new=c("DNA_1", "DNA_2", "RNA_1", "RNA_2"))
+
+uninduced_df <- setnames(uninduced_df, old=c("normalized_fLP3_LacZ_UnInduced_DNA_1","normalized_fLP3_LacZ_UnInduced_DNA_2", "normalized_fLP3_LacZ_UnInduced_RNA_1", "normalized_fLP3_LacZ_UnInduced_RNA_2"), new=c("DNA_1", "DNA_2", "RNA_1", "RNA_2"))
+
+med <- function(df) {
+  df <- df %>%
+    filter(DNA_1 > 0 & DNA_2 > 0) %>%
+    mutate(DNA_avg = (DNA_1+DNA_2)/2,
+           RNA_exp_1 = RNA_1/DNA_avg,
+           RNA_exp_2 = RNA_2/DNA_avg) %>% 
+  group_by(most_common) %>%
+  mutate(num_barcodes = n()) %>%
+  filter(num_barcodes > 2) %>%
+  mutate(Med_exp_1 = median(RNA_exp_1),
+         Med_exp_2 = median(RNA_exp_2)) %>%
+  ungroup() %>% 
+  select(most_common, Med_exp_1, Med_exp_2, num_barcodes) %>%
+    distinct()
+  return(df)
+}
+
+induced_med <- med(induced_df)
+uninduced_med <- med(uninduced_df)
+
+med_exp_master <- inner_join(induced_med, uninduced_med, by = 'most_common', suffix = c('_Induced', "_UnInduced"))
+
+
+```
+
+
+```{r}
+
+# COMPARING MEAN AND MEDIAN
+
+# install.packages("GGally")
+library(GGally)
+
+var_log10 <- function(df) {
+  log_ratio_df <- df %>% 
+    mutate_if(is.double, funs(log10(.)))
+  return(log_ratio_df)
+}
+
+med_sum_join <- function(sum, med) {
+  sum_select <- sum %>%
+    select(most_common, RNA_exp_Induced_1, RNA_exp_Induced_2)
+  med_select <- med %>%
+    select(most_common, Med_exp_1_Induced, Med_exp_2_Induced)
+  sum_med <- inner_join(sum_select, med_select, by = 'most_common') %>%
+    select(-most_common)
+  return(sum_med)
+}
+
+# filter out all expression > 0 
+med_vs_sum <- med_sum_join(mean_exp_master, med_exp_master) %>%
+  filter(RNA_exp_Induced_1 > 0 & RNA_exp_Induced_2 > 0 & Med_exp_1_Induced > 0 & Med_exp_2_Induced > 0) %>% var_log10()
+
+my_points <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_point(alpha = 0.1, size = 0.75) +
+#    scale_x_continuous(limits = c(-1.5, 1.5), breaks = c(-1:1)) + 
+#    scale_y_continuous(limits = c(-1.5, 1.5), breaks = c(-1:1)) +
+  annotation_logticks(sides = 'bl')
+}
+
+my_density <- function(data, mapping, ...) {
+  ggplot(data = data, mapping = mapping) +
+    geom_density(kernel = 'gaussian') +
+  #  scale_x_continuous(limits = c(-1.5, 1.5), breaks = c(-3:1)) +
+  #  scale_y_continuous(limits = c(-0.1, 1.5)) +
+    annotation_logticks(sides = 'b')
+}
+
+p_med_vs_sum <- ggpairs(med_vs_sum, 
+                        columnLabels = c('Sum Exp.\nRep. 1', 'Sum Exp.\nRep. 2',
+                                         'Med Exp.\nRep. 1', 'Med Exp.\nRep. 2'),
+                        lower = list(continuous = my_points),
+                        diag = list(continuous = my_density)) +
+  panel_border() + 
+  theme(panel.grid.major = element_blank()) + ggtitle("Induced Expression Correlation")
+
+#ggsave('p_med_vs_sum.pdf', p_med_vs_sum)
+p_med_vs_sum
+```
+
+```{r}
+# I will elect here to use the summed expression with a filter of num_barcodes > 2. Here are the corresponding technical plot graphs.
+
+variant_stats <- read.table("raw_data/LacZ_mapping_variant_statistics.txt", header = T, fill = T)
+
+# create dataframe with all variant names and filter out expression > 0
+induce_exp <- left_join(variant_stats, mean_exp_master, by = c("variant" = "most_common")) %>% na.omit(.) %>% filter(RNA_exp_Induced_1 > 0 & RNA_exp_Induced_2 > 0 & RNA_exp_UnInduced_1 > 0 & RNA_exp_UnInduced_2 > 0) %>% select("variant", "name", "RNA_exp_Induced_1", "RNA_exp_Induced_2", "RNA_exp_UnInduced_1", "RNA_exp_UnInduced_2")
+
+# correlation between Induced technical replicates
+corr_I <- cor(induce_exp$RNA_exp_Induced_1, induce_exp$RNA_exp_Induced_2) #Pearson correlation
+# correlation between UnInduced technical replicates
+corr_UI <- cor(induce_exp$RNA_exp_UnInduced_1, induce_exp$RNA_exp_UnInduced_2) #Pearson correlation
+
+# store all the negative controls
+test <- subset(induce_exp, grepl("neg_control", induce_exp$name)) 
+
+# median of neg_control expression
+med_neg_exp_ind_1 <- median(test$RNA_exp_Induced_1)
+med_neg_exp_ind_2 <- median(test$RNA_exp_Induced_2)
+med_neg_exp_un_1 <- median(test$RNA_exp_UnInduced_1)
+med_neg_exp_un_2 <- median(test$RNA_exp_UnInduced_2)
+
+test <- test %>%
+  mutate(normalized_RNA_exp_Induced_1 = RNA_exp_Induced_1/med_neg_exp_ind_1,
+         normalized_RNA_exp_Induced_2 = RNA_exp_Induced_2/med_neg_exp_ind_2,
+         normalized_RNA_exp_UnInduced_1 = RNA_exp_UnInduced_1/med_neg_exp_un_1,
+         normalized_RNA_exp_UnInduced_2 = RNA_exp_UnInduced_2/med_neg_exp_un_2,
+         normalized_RNA_exp_Induced_12 = (normalized_RNA_exp_Induced_1 + normalized_RNA_exp_Induced_2)/2,
+         normalized_RNA_exp_UnInduced_12 = (normalized_RNA_exp_UnInduced_1 + normalized_RNA_exp_UnInduced_2)/2,
+         ratio = normalized_RNA_exp_Induced_12/normalized_RNA_exp_UnInduced_12)
+
+#expression for each sample is normalized first by dividing by the median of the negative control expression in that corresponding sample. These normalized expressions are then averaged across the two replicates for Induced and UnInduced. Ratio is determined by dividing normalized Induced expression by normalized UnInduced expression. 
+
+induce_exp <- induce_exp %>%
+  mutate(normalized_RNA_exp_Induced_1 = RNA_exp_Induced_1/med_neg_exp_ind_1,
+         normalized_RNA_exp_Induced_2 = RNA_exp_Induced_2/med_neg_exp_ind_2,
+         normalized_RNA_exp_UnInduced_1 = RNA_exp_UnInduced_1/med_neg_exp_un_1,
+         normalized_RNA_exp_UnInduced_2 = RNA_exp_UnInduced_2/med_neg_exp_un_2,
+         normalized_RNA_exp_Induced_12 = (normalized_RNA_exp_Induced_1 + normalized_RNA_exp_Induced_2)/2,
+         normalized_RNA_exp_UnInduced_12 = (normalized_RNA_exp_UnInduced_1 + normalized_RNA_exp_UnInduced_2)/2,
+         ratio = normalized_RNA_exp_Induced_12/normalized_RNA_exp_UnInduced_12)
+
+# arrange in ascending order for ratio
+induce_exp <- induce_exp %>%
+  arrange(ratio) 
+
+induce_exp$variant <- factor(induce_exp$variant, induce_exp$variant[order(induce_exp$ratio)])
+
+# plot of Induced technical replicates (R^2 = 0.951)
+ggplot(induce_exp, aes(RNA_exp_Induced_1, RNA_exp_Induced_2)) + geom_point(alpha = .2) +
+geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('R^2==', signif(corr_I, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Induced 1') + ylab('Induced 2') + ggtitle('Comparing Promoter Expression Between Technical Replicates (Induced)') + geom_point(data=test, aes(RNA_exp_Induced_1, RNA_exp_Induced_2), color = "red") + geom_point(data=NULL, aes(med_neg_exp_ind_1, med_neg_exp_ind_2), color = "green")
+
+# plot of UnInduced technical replicates (R^2 = 0.956)
+ggplot(induce_exp, aes(RNA_exp_UnInduced_1, RNA_exp_UnInduced_2)) + geom_point(alpha = .2) +
+geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('R^2==', signif(corr_UI, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('UnInduced 1') + ylab('UnInduced 2') + ggtitle('Comparing Promoter Expression Between Technical Replicates (UnInduced)') + geom_point(data=test, aes(RNA_exp_UnInduced_1, RNA_exp_UnInduced_2), color = "red") + geom_point(data=NULL, aes(med_neg_exp_un_1, med_neg_exp_un_2), color = "green")
+
+# NORMALIZED INDUCED
+
+ggplot(induce_exp, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2)) +
+  geom_point(alpha = .2) +
+  geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('R^2==', signif(corr_I, 3)),   parse = T) + annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Normalized Induced 1') + ylab('Normalized Induced 2') + ggtitle('Comparing Normalized Promoter Expression Between Technical Replicates (Induced)') + geom_point(data=test, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2), color = "red")
+
+# NORMALIZED UNINDUCED
+
+ggplot(induce_exp, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2)) + geom_point(alpha = .2) +
+geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('R^2==', signif(corr_UI, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('UnInduced 1') + ylab('UnInduced 2') + ggtitle('Comparing Normalized Promoter Expression Between Technical Replicates (UnInduced)') + geom_point(data=test, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2), color = "red") 
+
+# induction ratio vs. variant
+
+ggplot(induce_exp, aes(ratio)) + 
+  geom_density() +
+  scale_x_log10() +
+  geom_vline(xintercept = 2, color = 'red') + annotate("text", label = 'Variants with >= 2 expression: 2902', x = 10, y = 2)
+
+# get number deemed "inducible"
+filter(induce_exp, ratio >= 2) %>%
+  summarize(n())
+inducible <- filter(induce_exp, ratio >= 2)
+
+# Plot Induced vs UnInduced
+
+corr <- cor(induce_exp$normalized_RNA_exp_Induced_12, induce_exp$normalized_RNA_exp_UnInduced_12)
+
+ggplot(induce_exp, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .2) +
+geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('R^2==', signif(corr, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('UnInduced 12') + ylab('Induced 12') + ggtitle('Comparing Normalized and Averaged Promoter Expression Between Induced and UnInduced') + geom_point(data=inducible, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12), color = "red", alpha = .2)
+
+#Plot Distribution of #barcodes
+a <- median(induce_exp$num_barcodes.y) # 11
+ggplot(induce_exp, aes(num_barcodes.y)) + geom_density(alpha=.5, fill = 'navyblue', color = 'navyblue') + 
+  scale_x_log10(breaks = c(1, 10, 100)) + xlab('Number of Barcodes per variant') + ylab('Density') + ggtitle('Distribution of Number of Integrated Barcodes per Variant') +
+  annotate("text", x=20, y=2.5, label = paste('Median =', a)) + geom_vline(xintercept= a) +
+  annotation_logticks(sides = 'b')
+
+```
+
+
+```{r}
+#Split data into different categories
+
+# Housekeeping things, change up the names of the sequences to make it easier to play with
+backup <- induce_exp
+write.table(backup, "./induce_exp.txt", quote = F, row.names = F)
+
+induce_exp <- backup
+induce_exp$name <- gsub("shift", "", induce_exp$name)
+induce_exp$name <- gsub(">LACI-", "", induce_exp$name)
+induce_exp$name <- gsub("-flipped_rc", "", induce_exp$name)
+induce_exp$name <- gsub("LOOP", "", induce_exp$name)
+induce_exp$name <- gsub("bp", "", induce_exp$name)
+
+# Split into separate libraries, not possible to split strings unless in a specific library
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+induce_distal <- subset(induce_exp, grepl("DISTAL", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Offset", "Min_35", "Core", "Min_10"), sep = "-", remove = F)
+
+induce_steric <- subset(induce_exp, grepl("STERIC", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Loop_Distance", "UP", "Min_35_Replaced_O", "Extended_Min_10", "Min_10", "Proximal"), sep = "-", remove = F)
+
+induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+induce_hybrid <- subset(induce_exp, grepl("HYBRID", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "AraC_Distal", "Min_35", "LacI_Core", "Min_10", "LacI_Proximal", "AraC_Proximal"), sep = "-", remove = F)
+
+```
+
+```{r}
+
+# LETS MAKE GRAPHS FOR COMBO
+corr_combo <- cor(induce_combo$normalized_RNA_exp_UnInduced_12, induce_combo$normalized_RNA_exp_Induced_12) #Pearson correlation
+
+ggplot(induce_combo, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .5, aes(color=Proximal)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_combo, 3)), parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Induced and UnInduced Combo Variants')
+
+# for filtering out by specific promoter element
+ggplot(induce_combo, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(data = filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), alpha = .5, aes(color=Distal)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_combo, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Uninduced and Induced Combo Variants')
+
+## Observations
+
+# For strong inducible promoters, proximal binding sites seem to be composed of lacO1 and lacOsym exclusively, but not quite like that for the distal binding sites.
+
+pal <- wes_palette("Zissou1", 10, type = "continuous")
+induce_combo$Distal  <- with(induce_combo, reorder(Distal, ratio, median))
+induce_combo$Proximal  <- with(induce_combo, reorder(Proximal, ratio, median))
+
+ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Distal, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.5,1.3)) +
+    labs(title = 'Combinatorial Expression of Main and Auxiliary Operator Elements', 
+    x = 'Distal', y = 'Proximal') +
+  theme(panel.background = element_rect(fill = "gray80"))
+
+# Ordering for heatmaps
+require(forcats)
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, ratio, median))
+induce_combo$Min_10 <- with(induce_combo, reorder(Min_10, ratio, median))
+induce_combo$Proximal <- with(induce_combo, reorder(Proximal, ratio, median))
+induce_combo$Distal <- with(induce_combo, reorder(Distal, ratio, median))
+
+# consensus -10 and -35 induction heatmap
+ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log10(ratio))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.6,1.3)) +
+    labs(x = 'Proximal', y = 'Distal') +
+  theme(panel.background = element_rect(fill = "gray80"))
+
+# consensus -10 and -35 uninduced heatmap
+ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log10(normalized_RNA_exp_UnInduced_12))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(exp_UnInduced_12)', limits = c(-0.7,1.9)) +
+    labs(x = 'Proximal', y = 'Distal') +
+  theme(panel.background = element_rect(fill = "gray80"))
+
+# overall inducion heatmap
+ggplot(induce_combo, aes(x = Proximal, y = Distal)) + 
+  geom_tile(aes(fill = log10(ratio))) + 
+  scale_fill_gradientn(colors = pal, limits = c(-0.6,1.3)) + 
+  facet_grid(fct_rev(Min_10) ~ Min_35) +
+  theme(panel.background = element_rect(fill = "gray80"), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.text.x = element_blank(), 
+        panel.spacing = unit(0.2, "lines")) + 
+  labs(x = '-35 Variant', y = '-10 Variant')
+
+# filter out seemingly inducible by ratio >= 2 # inducible dataframe
+# filter out seemingly leaky by if RNA_exp_uninduced is 1 std dev above negative control median
+
+inducible_combo <- filter(induce_combo, ratio >= 2) #1486 -> 169
+med_neg <- median(test$normalized_RNA_exp_UnInduced_12) #1.00
+two_sd <- 2*sd(test$normalized_RNA_exp_UnInduced_12) #2.19
+not_leaky_combo <- filter(inducible_combo, abs(normalized_RNA_exp_UnInduced_12 - med_neg) < two_sd) # 169 -> 130
+
+ggplot(not_leaky_combo, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2)) +
+  geom_point(alpha = .5) +
+  geom_smooth(method=lm) + annotation_logticks() + scale_x_log10(limits = c(0.01,300), breaks = c(0.01, 0.1, 1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Normalized Induced 1') + ylab('Normalized Induced 2') + ggtitle('Comparing Normalized Promoter Expression Between Technical Replicates (Induced)') + geom_point(data=test, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2), color = "red", alpha = .2) + geom_point(data=inducible_combo, aes(normalized_RNA_exp_UnInduced_1, normalized_RNA_exp_UnInduced_2), alpha = .2, color = 'blue')
+
+# heat map of promoters deemed inducible
+ggplot(filter(not_leaky_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Distal, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(0.55,1.3)) +
+    labs(title = 'Combinatorial Expression of Main and Auxiliary Operator Elements', 
+    x = 'Distal', y = 'Proximal') +
+  theme(panel.background = element_rect(fill = "gray80"))
+
+
+# Inducible promoters that are not leaky have either lacO1, lacOsym, or lacO3 as proximal binding sites + 03_rightSym, 01_rightSym, lacO1, or lacOsym as distal binding sites. Strongest is lacO1 proximal with lacOsym distal. 
+```
+
+```{r, warning=FALSE}
+
+# LETS MAKE GRAPHS FOR DISTAL
+
+corr_distal <- cor(induce_distal$normalized_RNA_exp_UnInduced_12, induce_distal$normalized_RNA_exp_Induced_12) #Pearson correlation
+
+inducible_distal <- filter(induce_distal, ratio >= 2) #3744 -> 716
+mean_neg <- mean(test$normalized_RNA_exp_UnInduced_12) #1.09
+two_sd <- 2*sd(test$normalized_RNA_exp_UnInduced_12) #2.19
+not_leaky_distal <- filter(inducible_distal, abs(normalized_RNA_exp_UnInduced_12 - mean_neg) < two_sd) # 716 -> 523
+
+# overall
+ggplot(induce_distal, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .4, aes(color=Distal)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_distal, 3)), parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Uninduced and Induced Distal Variants')
+
+# for filtering out by specific promoter element
+ggplot(induce_distal, aes(RNA_exp_UnInduced_12, RNA_exp_Induced_12)) + geom_point(alpha = .5, aes(color=Offset)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_distal, 3)),   parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Uninduced and Induced Distal Variants') + facet_wrap(~Offset, scales = "free")
+
+# explore offset effects of not leaky subset
+not_leaky_distal %>%
+  filter(., Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>% 
+  ggplot(., aes(as.numeric(Offset), log10(ratio))) + geom_smooth(aes(color = Distal), span = 0.4) + geom_point(aes(color=Distal)) + facet_wrap(~Distal, scales="free") + facet_wrap(~Core, scales = "free")
+
+# Lets explore the offset effects
+induce_distal %>%
+  filter(., Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>% 
+  ggplot(., aes(as.numeric(Offset), log10(ratio))) + geom_smooth(aes(color = Distal), span = 0.4) + geom_point(aes(color=Distal)) + facet_wrap(~Distal, scales="free") + facet_wrap(~Core, scales = "free")
+
+# When looking at ratio, the best inducible promoters all have LacO1 and LacOsym core sites. There's an ocassional LacO3, but seems to be coupled with a distal LacO1 or LacOsym site. 
+
+# Occasional weird thing with LacOscram being inducible wtf
+
+# Check to see if distal element is in the same site as the Pcombo, then compare effects of moving the proximal element to the core element.
+
+
+```
+```{r}
+# LETS LOOK AT STERIC
+
+corr_steric <- cor(induce_steric$normalized_RNA_exp_UnInduced_12, induce_steric$normalized_RNA_exp_Induced_12) #Pearson correlation
+
+inducible_steric <- filter(induce_steric, ratio >= 2) #1352 -> 178
+med_neg <- median(test$normalized_RNA_exp_UnInduced_12) #1.09
+two_sd <- 2*sd(test$normalized_RNA_exp_UnInduced_12) #2.19
+not_leaky_steric <- filter(inducible_steric, abs(normalized_RNA_exp_UnInduced_12 - med_neg) < two_sd) # 178 -> 163
+
+ggplot(induce_steric, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .4, aes(color=UP)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_steric, 3)), parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Induced and UnInduced Steric Variants')
+
+# Difference between O1 and 55 bp loops? # try filtering out by not_leaky_steric
+ggplot(filter(induce_steric, Loop_Distance == 'O1', Min_10 == 'minus10cons', Extended_Min_10 == 'ext_UV5'), aes(x = Min_35_Replaced_O, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.9,1.6)) +
+    labs(title = 'Combinatorial Expression of Core and Proximal Operator Elements with short loop', 
+    x = 'Core', y = 'Proximal') + theme(panel.background = element_rect(fill = "gray80")) + facet_wrap(~UP, scales = 'free')
+
+ggplot(filter(induce_steric, Loop_Distance == '55', Min_10 == 'minus10cons', Extended_Min_10 == 'ext_UV5'), aes(x = Min_35_Replaced_O, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.9,1.6)) +
+    labs(title = 'Combinatorial Expression of Core and Proximal Operator Elements with longer 55 bp loop', 
+    x = 'Core', y = 'Proximal') + theme(panel.background = element_rect(fill = "gray80")) + facet_wrap(~UP, scales = 'free')
+# conclusions: 55 is better ...
+
+# Difference between ext and not ext? 
+ggplot(filter(induce_steric, Extended_Min_10 == 'ext_UV5', Loop_Distance == '55', Min_10 == 'minus10cons'), aes(x = Min_35_Replaced_O, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.9,1.6)) +
+    labs(title = 'Combinatorial Expression of Core and Proximal Operator Elements with no extended -10, 55bp loop, cons -10', 
+    x = 'Core', y = 'Proximal') + theme(panel.background = element_rect(fill = "gray80")) + facet_wrap(~UP, scales = 'free')
+
+ggplot(filter(induce_steric, Extended_Min_10 == 'ext_min10', Loop_Distance == '55', Min_10 == 'minus10cons'), aes(x = Min_35_Replaced_O, y = Proximal)) + geom_tile(aes(fill = log10(ratio))) +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_gradientn(colors = pal, name = 'Log10(Ratio)', limits = c(-0.9,1.6)) +
+    labs(title = 'Combinatorial Expression of Core and Proximal Operator Elements with extended -10, 55bp loop, cons -10', 
+    x = 'Core', y = 'Proximal') + theme(panel.background = element_rect(fill = "gray80")) + facet_wrap(~UP, scales = 'free')
+
+# conclusions: need the ext?
+
+```
+```{r}
+# LETS LOOK AT MULTIPLE
+
+corr_multiple <- cor(induce_multiple$normalized_RNA_exp_UnInduced_12, induce_multiple$normalized_RNA_exp_Induced_12) #Pearson correlation
+
+
+ggplot(induce_multiple, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .4, aes(color=Distal_left)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_multiple, 3)), parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Uninduced and Induced Multiple Variants')
+
+# lets explore effect of additional lacI site on left
+
+induce_multiple %>%
+  ggplot(., aes(Proximal, ratio)) + geom_boxplot() + scale_y_log10()
+#  geom_smooth(aes(color=Distal_right)) + 
+#  geom_point(aes(color=Distal_right))
+
+# none of the promoters synthesized had Osym in both sites...
+# 1628/2000 possible sequences mapped, 80 possibilities with both sites...
+
+# subset a single proximal element, then look at the distals
+
+```
+
+```{r}
+
+# LETS LOOK AT HYBRID
+
+corr_hybrid <- cor(induce_hybrid$normalized_RNA_exp_UnInduced_12, induce_hybrid$normalized_RNA_exp_Induced_12) #Pearson correlation
+
+ggplot(induce_hybrid, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(alpha = .4, aes(color=LacI_Core)) + geom_smooth(method=lm) + annotate("text", x =.5, y = 30, label = paste('r^2==', signif(corr_hybrid, 3)), parse = T) + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced') + ylab('Induced') + ggtitle('Comparing Promoter Expression Between Uninduced and Induced Hybrid Variants')
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
