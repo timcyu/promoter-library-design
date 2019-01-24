@@ -1,0 +1,148 @@
+---
+title: "Fig4"
+output: html_document
+---
+
+```{r}
+# normalize by oscram and check difference between 2 repressors vs. 1
+
+# tile plot of left vs. right
+
+# scatter plot with combo, steric, distal, and multiple
+
+
+
+
+```
+
+
+```{r, include=FALSE}
+setwd("~/Desktop/induce_library/figs/")
+
+```
+
+```{r, include=FALSE}
+
+library(viridis)
+library(plyr)
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("ggjoy")
+library("reshape2")
+require(cowplot)
+library('RInside')
+library("stringr")
+require(forcats)
+library("colorspace")
+#install.packages("scales")
+library(scales)
+library(RColorBrewer)
+
+
+
+```
+
+
+```{r}
+
+induce_exp <- read.table("induce_library/processed_data/induce_exp.txt", header = T)
+
+induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal_left", "Distal_right", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F) %>% mutate(induction = ratio/normalized_RNA_exp_UnInduced_12)
+
+```
+
+```{r}
+#pal_v <- choose_palette()
+pal5 <- brewer.pal(n=5, name ='Spectral')
+
+mu <- induce_multiple %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
+mu$Proximal <- with(mu, reorder(Proximal, induction, median))
+mu$Distal_left <- with(mu, reorder(Distal_left, induction, median))
+mu$Distal_right <- with(mu, reorder(Distal_right, induction, median))
+
+
+scram_prox_avg <- median(filter(mu, Proximal == 'lacOscram')$induction)
+#induce_multiple$Proximal <- with(induce_multiple, reorder(Proximal, induction, median))
+
+# PROXIMAL
+a <- ggplot(mu, aes(x = Proximal, y=induction/scram_prox_avg)) +
+  geom_boxplot(aes(fill = Proximal)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y =     element_text(size = 20)) +
+  scale_y_log10(limits = c(0.01,500)) +
+  labs(title = 'Distribution of Induction:Noise \n by Proximal Operator', 
+       y = 'Induction Ratio:Noise', x = 'Proximal Operator', size = 30) +
+  annotation_logticks(sides = 'l')
+
+
+# facet by Proximal 
+
+# seeing if a repressor in the distal_left site improves induction 
+# ABSOLTE TRASH, LOOKS LIKE SCRAM IS BETTER THAN OTHERS
+scram_left_avg <- median(filter(mu, Distal_left == 'lacOscram')$induction)
+#induce_multiple$Distal_left <- with(induce_multiple, reorder(Distal_left, induction, median))
+
+b <- ggplot(mu, aes(x = Distal_left, y=induction/scram_left_avg)) +
+  geom_boxplot(aes(fill=Distal_left)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10(limits = c(0.01,500)) +
+  labs(title = 'Distribution of Induction:Noise \n by Left Distal Operator', 
+       y = 'Induction Ratio:Noise', x = 'Left Distal Operator', size = 30) +
+  annotation_logticks(sides = 'l')
+
+# seeing if a repressor in the distal_right site improves induction 
+# BETTER THAN SCRAM, BUT NOT BY MUCH
+scram_right_avg <- median(filter(mu, Distal_right == 'lacOscram')$induction)
+#induce_multiple$Distal_right <- with(induce_multiple, reorder(Distal_right, induction, median))
+
+c <- ggplot(mu, aes(x = Distal_right, y=induction/scram_right_avg)) +
+  geom_boxplot(aes(fill=Distal_right)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10(limits = c(0.01,500)) +
+  labs(title = 'Distribution of Induction:Noise \n by Right Distal Operator', 
+       y = 'Induction Ratio:Noise', x = 'Right Distal Operator', size = 30) +
+  annotation_logticks(sides = 'l')
+
+
+plot_grid(a,b,c, ncol = 3)
+ggsave('Fig_4A.pdf', width = 20, height = 8)
+```
+
+```{r}
+
+ # subset by Proximal Osym
+ggplot(filter(induce_multiple, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[10]~frac('Induction Ratio', 'Basal Expression'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
+  labs(title = 'Combinatorial Induction of Left/Right Distal Sites with Consensus -10/-35', x = 'Left Distal', y = 'Right Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40"))
+ggsave('Fig_4B.pdf', width = 10, height = 8)
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

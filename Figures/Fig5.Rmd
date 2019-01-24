@@ -1,0 +1,84 @@
+---
+title: "Fig5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+setwd("~/Desktop/induce_library/figs/")
+
+```
+
+```{r, include=FALSE}
+
+library(viridis)
+library(plyr)
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("ggjoy")
+library("reshape2")
+require(cowplot)
+library('RInside')
+library("stringr")
+require(forcats)
+library("colorspace")
+#install.packages("scales")
+library(scales)
+
+
+```
+
+
+```{r}
+
+induce_exp <- read.table("induce_library/processed_data/induce_exp.txt", header = T)
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+```
+
+
+```{r}
+# SUPPLEMENTARY FIGURE 1
+
+ggplot(induce_combo, aes(normalized_RNA_exp_Induced_12, ratio/normalized_RNA_exp_UnInduced_12)) + geom_point(aes(color=Proximal), size = 3, alpha = .6) + scale_color_manual(values = pal(10), breaks = legend_ord) +
+  geom_smooth(method='gam', color = 'brown4') + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + 
+  scale_y_log10(breaks = c(1,10,100)) + xlab('Induced expression') + ylab('Induction Ratio:Noise') + labs(title = 'Induction Ratio:Noise vs. Induced Expression') + facet_wrap(~Proximal, scales = 'fixed') 
+ggsave('Fig_5A.pdf', width = 10, height = 8)
+
+```
+
+
+```{r}
+# SUPPLEMENTARY FIGURE 2
+
+ggplot(induce_combo, aes(normalized_RNA_exp_UnInduced_12, ratio/normalized_RNA_exp_UnInduced_12)) + geom_point(aes(color=Proximal), size = 3, alpha = .6) + scale_color_manual(values = pal(10), breaks = legend_ord) +
+  geom_smooth(method='gam', color = 'brown4') + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + 
+  scale_y_log10(breaks = c(1,10,100)) + xlab('Basal expression') + ylab('Induction Ratio:Noise') + labs(title = 'Induction Ratio:Noise vs. Basal Expression') + facet_wrap(~Proximal, scales = 'fixed')
+ggsave('Fig_5B.pdf', width = 10, height = 8)
+
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

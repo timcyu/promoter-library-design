@@ -1,0 +1,179 @@
+---
+title: "Fig1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+# set your working directory
+setwd("~/Desktop/induce_library/figs/")
+```
+
+```{r, include=FALSE}
+#install.packages('nnet')
+
+library(nnet)
+library(viridis)
+library(plyr)
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("ggjoy")
+library("reshape2")
+require(cowplot)
+library('RInside')
+library("stringr")
+require(forcats)
+library("colorspace")
+
+```
+
+```{r}
+induce_exp <- read.table("induce_library/processed_data/induce_exp.txt", header = T)
+# split reg elements apart
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
+
+# ordering for tile plots
+induce_combo$Min_35 <- with(induce_combo, reorder(Min_35, ratio, median))
+induce_combo$Min_10 <- with(induce_combo, reorder(Min_10, ratio, median))
+induce_combo$Proximal <- with(induce_combo, reorder(Proximal, ratio, median))
+induce_combo$Distal <- with(induce_combo, reorder(Distal, ratio, median))
+```
+
+```{r,include = FALSE}
+pal <- choose_palette()
+
+```
+
+```{r}
+# FIGURE 2B: Scatter plot of induced vs uninduced
+
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+ggplot(induce_combo, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(aes(color=Proximal), size = 3, alpha = .6) + scale_color_manual(values = pal(10), breaks = legend_ord) +
+  geom_smooth(method='gam', color = 'brown4') + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + 
+  scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced expression') + ylab('Induced expression') + labs(title = 'Comparing promoter expression between induced and uninduced') 
+ggsave('Fig_2B.pdf', width = 10, height = 8)
+
+
+```
+
+
+```{r}
+# FIGURE 2C: Tile plot, what combinations of repressors yield the best induction ratios?
+demo(plotmath)
+ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~frac('Induction Ratio', 'Basal Expression'))) +
+  labs(title = 'Combinatorial Induction of Proximal and Distal Sites with Consensus -10/-35', x = 'Proximal', y = 'Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40"))
+ggsave('Fig_2C.pdf', width = 10, height = 7)
+
+```
+```{r}
+# FIGURE 2D: What -10/-35 give best Induction:Noise
+
+induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(combo_ratio=mean(ratio),
+         combo_uninduced=mean(normalized_RNA_exp_UnInduced_12),
+         combo_svn = (combo_ratio/combo_uninduced)) %>%
+  select(Min_10, Min_35, combo_ratio, combo_uninduced, combo_svn) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_svn))) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~frac('Induction Ratio','Basal Expression')), limits = c(-0.9, 1.4)) + theme(legend.title = element_text(size = 15)) +
+  labs(title = expression(bold('Combinatorial Induction of -10 and -35 elements with O'[sym]~' and O'[1])), x = 'Minus 10', y = 'Minus 35', size = 30) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  geom_text(aes(label=signif(combo_svn, 3)), size=5)
+ggsave('Fig_2D.pdf', width = 10, height = 6)
+
+```
+
+```{r}
+induce_combo <- mutate(induce_combo, log_ratio = log10(ratio/normalized_RNA_exp_UnInduced_12))
+train_size <- floor(0.75*nrow(induce_combo)) # get 75% of the data
+
+set.seed(123) 
+train_ind <- sample(seq_len(nrow(induce_combo)), size = train_size)
+train_set <- induce_combo[train_ind, ] # training set for linear model
+test_set <- induce_combo[-train_ind, ] # attempt to predict test set
+
+# plotting
+test_set$Proximal  <- with(test_set, reorder(Proximal,ratio, median))
+legend_ord <- levels(with(test_set, reorder(Proximal,-ratio, median)))
+
+# FIGURE 2E: Neural Network
+
+#train neural network on all sequence elements
+fit <- nnet(log_ratio ~ Min_10 + Min_35 + Distal + Proximal, 
+            data=train_set, size=4, maxit=150, linout=T, decay=0.01)
+
+# make predictions
+test_set$predicted_exp_NN <- predict(fit, test_set, type="raw")
+
+#corr <- summary(lm(log_ratio ~ predicted_exp_NN, test_set))$r.square
+corr_NN <- cor(test_set$log_ratio, test_set$predicted_exp_NN)
+
+test_set$Proximal  <- with(test_set, reorder(Proximal,ratio, median))
+legend_ord <- levels(with(test_set, reorder(Proximal,-ratio, median)))
+
+ggplot(test_set, aes(10^predicted_exp_NN, 10^log_ratio, color = Proximal)) + 
+  geom_point(alpha = .6, size = 4) +
+  annotate("text", x =1.0, y = 10, 
+           label = paste('r==', signif(corr_NN, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal Site', breaks = legend_ord) + 
+  scale_x_log10(limits = c(0.6,25)) + scale_y_log10(limits = c(0.3,25)) + 
+    annotation_logticks() + 
+  xlab('Predicted Induction') +
+  ylab('Actual Induction') +
+  ggtitle('Using Neural Network to Predict Variant Induction')
+ggsave('Fig_2E.pdf', width = 10, height = 6)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
