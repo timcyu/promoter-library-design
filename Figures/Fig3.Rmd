@@ -14,6 +14,7 @@ setwd("~/Desktop/induce_library/figs/")
 
 ```{r, include=FALSE}
 
+#install.packages('dplyr')
 library(viridis)
 library(plyr)
 library("ggplot2")
@@ -25,7 +26,7 @@ require(cowplot)
 library('RInside')
 library("stringr")
 require(forcats)
-library("colorspace")
+#library("colorspace")
 #install.packages("scales")
 library(scales)
 
@@ -68,7 +69,7 @@ co <- induce_combo %>% filter((Proximal == 'lacO1' | Proximal == 'lacO2' | Proxi
 di <- induce_distal %>%
   filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
   group_by(Offset) %>%
-  mutate(mean_ind = mean(ratio/normalized_RNA_exp_UnInduced_12)) %>%
+  mutate(mean_ind = mean(ratio)) %>%
   ungroup() %>%
   filter(mean_ind == max(mean_ind)) 
 
@@ -104,6 +105,118 @@ c <- ggplot(st, aes(x = Core, y = Proximal)) + geom_tile(aes(fill = log10(ratio/
 plot_grid(a,b,c, ncol = 3) 
 ```
 
+
+
+```{r}
+induce_distal %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  filter(Core == 'lacOsym' | Core == 'lacO1', Distal == 'lacOsym' | Distal == 'lacO1') %>%
+  ggplot(aes(x = Offset, y=ratio)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color = Core)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  #scale_y_log10() +
+  labs(title = 'Where is the loop', 
+       y = 'Basal Expression', x = 'Offset', size = 30) +
+  annotation_logticks(sides = 'l') + facet_wrap(~Core, scales = 'fixed') + geom_smooth()
+
+g1 <- induce_distal %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  ggplot(aes(x = Core, y=ratio)) +
+  geom_boxplot(aes(fill = Core)) +
+  #geom_jitter(aes(color = Core)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10() +
+  scale_x_discrete(limits = c("lacOscram", 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+  labs(title = 'Induction ratio across Core-Distal (DISTAL) promoters \n with different core operators', 
+       y = 'Induction Ratio', x = 'Core Operator', size = 30) +
+  annotation_logticks(sides = 'l')
+
+g2 <- induce_distal %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  ggplot(aes(x = Distal, y=ratio)) +
+  geom_boxplot(aes(fill = Distal)) +
+  scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10() +
+  scale_x_discrete(limits = c("lacOscram", 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+  labs(title = 'Induction ratio across Core-Distal (DISTAL) promoters \n with different distal operators', 
+       y = 'Induction Ratio', x = 'Distal Operator', size = 30) +
+  annotation_logticks(sides = 'l')
+
+plot_grid(g1, g2)
+ggsave('Distal_fig.pdf', width = 15, height = 8)
+
+
+induce_distal %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  group_by(Offset) %>%
+  mutate(mean_ind = mean(ratio)) %>%
+  ggplot(., aes(x = Offset, y = mean_ind)) + geom_point() + geom_smooth()
+
+induce_distal %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  ggplot(., aes(x = Offset, y = normalized_RNA_exp_UnInduced_12)) + geom_boxplot() + scale_y_log10()
+
+induce_distal %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Core == 'lacOscram', Distal == 'lacOscram') %>%
+  group_by(Offset) %>%
+  mutate(scram_ratio = median(ratio)) %>%
+  ungroup() %>%
+  select(Min_10, Min_35, Offset, scram_ratio) %>%
+  left_join(filter(induce_distal, Min_10 == 'minus10cons', Min_35 == 'minus35cons'), ., by = "Offset") %>%
+  mutate(normalized_ratio = ratio/scram_ratio) %>%
+  ggplot(., aes(x = Offset, y = normalized_ratio)) + geom_boxplot() + scale_y_log10()
+    
+
+
+#%>%
+  mutate(scram_ratio = ratio) %>%
+  select(Offset, scram_ratio) %>%
+  left_join(induce_combo, ., by = c("Min_10", "Min_35")) %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(normalized_ratio = normalized_RNA_exp_UnInduced_12/scram_ratio) %>%
+  ungroup() %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  ggplot(., aes(x = Proximal, y = Distal)) + 
+  geom_tile(aes(fill = normalized_ratio)) + 
+  scale_fill_viridis(name = 'Induction', limits = c(0, 4)) +
+  facet_grid(fct_rev(Min_10) ~ Min_35) +
+  theme(panel.background = element_rect(fill = "gray40"), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.text.x = element_blank(), 
+        panel.spacing = unit(0.2, "lines")) + 
+  labs(title = 'Combinatorial Induction of Proximal and Distal Operator Sites', x = '-35 Variant', y = '-10 Variant')
+```
+
+```{r}
+# Compare distal null, same -10/-35 compare proximal (COMBO) vs distal (DISTAL)
+
+proximal_mean <- mean(filter(induce_combo, Proximal == 'lacOscram', Distal == 'lacOscram')$ratio)
+distal_mean <- mean(filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram')$ratio)
+
+induce_distal %>%
+  filter(Distal == 'lacOscram', Offset == '20') %>%
+  left_join(., filter(induce_combo, Distal == 'lacOscram'), by = c("Min_10", "Min_35", "Core" = "Proximal")) %>%
+  mutate(diff = (ratio.x/distal_mean)/(ratio.y/proximal_mean)) %>%
+  ggplot(aes(x = Core, y = log2(diff))) + geom_boxplot() + geom_jitter() + scale_x_discrete(limits = c("lacO3", "lacO2","lacO1","lacOsym")) + xlab("Core/Proximal") + ylab("Normalized Distal Ratio / Normalized Combo Ratio") + geom_hline(yintercept = 0, linetype = 'dashed', colour = 'red')
+
+  ggplot(aes(x = ratio.x/proximal_mean, y = ratio.y/distal_mean)) + geom_point(aes(color = Core), size = 3) + labs(x = "Distal Ratio", y = "Combo Ratio") + geom_abline(slope = 1, intercept = 0) + scale_x_log10(breaks = c(0,1,10,100)) + scale_y_log10(breaks = c(0,1,10,100)) + annotation_logticks()
+
+left_join(induce_distal, induce_combo, by = c("Core" = "Proximal", "Distal", "Min_10", "Min_35")) %>% 
+  ggplot(aes(x = ratio.x, y = ratio.y)) + geom_point(aes(color = Core), size = 1.5, alpha = 0.7) + labs(x = "Distal Ratio", y = "Combo Ratio") + geom_smooth(method = 'lm') + geom_abline(slope = 1, intercept = 0) + scale_x_log10(breaks = c(0,1,10,100)) + scale_y_log10(breaks = c(0,1,10,100)) + annotation_logticks() + facet_wrap(~Core)
+  
+
+```
+
+
+
+
+
+
 ```{r}
 #Comparing ratio/basal vs basal across the filtered 3 libraries
 #combine dataframes
@@ -124,7 +237,37 @@ annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + geom_smooth(aes(co
   scale_y_log10(breaks = c(1,10,100)) + xlab('Basal Expression') + ylab('Induction Ratio') + labs(title = 'Induction Ratio vs. Basal Expression')
 ggsave('Fig_3B.pdf', width = 10, height = 8)
 
+```
 
+```{r}
+
+ggplot(basal_exp, aes(x=normalized_RNA_exp_UnInduced_12, y=normalized_RNA_exp_Induced_12)) + geom_point(aes(color=Library), alpha = .9, size = 3.5, alpha = 0.8) + scale_color_manual(values = pal3) +
+annotation_logticks() + scale_x_log10(breaks = c(0,1,10,100)) + scale_y_log10(breaks = c(0,1,10,100)) + xlab('Basal Expression') + ylab('Induced Expression') + labs(title = 'Induced Expression vs Basal Expression') + geom_abline(intercept = 0, slope = c(1,2,4,8), color = 'black', linetype = 'dashed', size = 0.75) + geom_text(aes(x = 1.5, y = 120, label = '8x')) + geom_text(aes(x = 2.7, y = 120, label = '4x')) + geom_text(aes(x = 8.7, y = 120, label = '2x')) + geom_text(aes(x = 91, y = 120, label = '1x'))
+ggsave('Fig_3B.pdf', width = 10, height = 8)
+
+```
+
+
+```{r}
+pal3 <- c('#EE2524', '#EBCC2A', '#3B9BB3', '#5D478B')
+a1 <- ggplot(basal_exp, aes(x = Library, y = normalized_RNA_exp_UnInduced_12)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(colour = Library), size = 3.5, alpha = 0.8) + 
+  scale_color_manual(values = pal3) + 
+  scale_y_log10() +
+  annotation_logticks(sides = 'l') + 
+  ylab('Basal Expression') + xlab('Promoter Architecture') + labs(title = 'Variation in basal expression levels \n across different promoter architectures') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))
+
+a2 <- ggplot(basal_exp, aes(x = Library, y = ratio)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(colour = Library), size = 3.5, alpha = 0.8) + 
+  scale_color_manual(values = pal3) + 
+  scale_y_log10() +
+  annotation_logticks(sides = 'l') + 
+  ylab('Induction Ratio') + xlab('Promoter Architecture') + labs(title = 'Variation in induction ratio levels \n across different promoter architectures') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))
+
+plot_grid(a1, a2)
+ggsave('Fig_4B.pdf', width = 14, height = 8)
 ```
 
 ```{r}
@@ -138,28 +281,42 @@ a <- ggplot(NULL, aes(x = "", y = normalized_RNA_exp_UnInduced_12)) +
   scale_fill_manual(values = pal3) +
   ylab('Basal Expression') + xlab('Promoter Architecture') + labs(title = 'Variation in basal expression levels \n across different promoter architectures') + scale_y_log10() + annotation_logticks(sides = "l") + scale_x_discrete(limits = c("Distal", "Combo", "Multiple", "Steric")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) 
 
-b <- ggplot(NULL, aes(x = "", y = ratio/normalized_RNA_exp_UnInduced_12)) +
+b <- ggplot(NULL, aes(x = "", y = ratio)) +
   geom_boxplot(data = st, aes(x = "Steric", fill = Library)) + 
   geom_boxplot(data = co, aes(x = "Combo", fill = Library)) +
   geom_boxplot(data = di, aes(x = "Distal", fill = Library)) +
   geom_boxplot(data = mu, aes(x = "Multiple", fill = Library)) +
   scale_fill_manual(values = pal3) +
-  ylab('Induction:Noise') + xlab('Promoter Architecture') + labs(title = 'Variation in Induction:Noise levels \n across different promoter architectures') + scale_y_log10() + annotation_logticks(sides = "l") + scale_x_discrete(limits = c("Distal", "Combo", "Multiple", "Steric")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) 
+  ylab('Induction Ratio') + xlab('Promoter Architecture') + labs(title = 'Variation in Induction Ratio \n across different promoter architectures') + scale_y_log10() + annotation_logticks(sides = "l") + scale_x_discrete(limits = c("Distal", "Combo", "Multiple", "Steric")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) 
 
-plot_grid(a,b)
-ggsave('Fig_3C.pdf', width = 20, height = 8)
+c <- ggplot(NULL, aes(x = "", y = ratio/normalized_RNA_exp_UnInduced_12)) +
+  geom_boxplot(data = st, aes(x = "Steric", fill = Library)) + 
+  geom_boxplot(data = co, aes(x = "Combo", fill = Library)) +
+  geom_boxplot(data = di, aes(x = "Distal", fill = Library)) +
+  geom_boxplot(data = mu, aes(x = "Multiple", fill = Library)) +
+  scale_fill_manual(values = pal3) +
+  ylab('Induction Ratio:Noise') + xlab('Promoter Architecture') + labs(title = 'Variation in Induction Ratio:Noise \n across different promoter architectures') + scale_y_log10() + annotation_logticks(sides = "l") + scale_x_discrete(limits = c("Distal", "Combo", "Multiple", "Steric")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) 
+
+plot_grid(a,b,c, ncol = 3)
+ggsave('Fig_3C.pdf', width = 25, height = 8)
 
 ```
 
 
-
-
-
 ```{r}
-up_326x_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'up_326x_ext_10')
+up_326x_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'up_326x_ext_10') 
+#, (Core == 'lacOsym' | Core == 'lacO1'), (Proximal == 'lacOsym' | Proximal == 'lacO1')) 
+
 up_326x_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'up_326x', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'up_326x_ext_UV5')
+#, (Core == 'lacOsym' | Core == 'lacO1'), (Proximal == 'lacOsym' | Proximal == 'lacO1')) 
+
 no_up_ext_10 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_min10') %>% mutate(category = 'no_up_ext_10')
+
+#, (Core == 'lacOsym' | Core == 'lacO1'), (Proximal == 'lacOsym' | Proximal == 'lacO1'))
+
 no_up_ext_UV5 <- filter(induce_steric, Loop_Distance == 55, UP == 'no_up', Extended_Min_10 == 'ext_UV5') %>% mutate(category = 'no_up_ext_UV5')
+
+#, (Core == 'lacOsym' | Core == 'lacO1'), (Proximal == 'lacOsym' | Proximal == 'lacO1'))
 
 temp1 <- rbind(up_326x_ext_10, up_326x_ext_UV5)
 temp2 <- rbind(temp1, no_up_ext_10)
@@ -177,13 +334,15 @@ gg1 <- steric_box %>%
                   
 gg2 <- steric_box %>%
   ggplot(., aes(fill = Min_10, y = ratio, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))                                                                            
-gg <- plot_grid(gg1, gg2)
+  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))             
+gg3 <- steric_box %>%
+  ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_Induced_12, x = category)) +
+  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))                                                        
+gg <- plot_grid(gg2, gg3)
 title <- ggdraw() + draw_label("Optimizing Proximal-Core (STERIC) promoters by swapping out UP and extended -10 elements", fontface='bold')
 plot_grid(title, gg, ncol = 1, rel_heights=c(0.1, 1))
 ggsave('Fig_3D.pdf', width = 20, height = 8)                                                                                                                                                                                                
                                                                                                                                                                                                    
-                                                                                                                                                                                                   #title = 'Optimizing Psteric promoters by swapping out UP and extended -10 elements')
 
 ```
 

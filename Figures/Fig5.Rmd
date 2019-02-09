@@ -62,6 +62,24 @@ ggsave('Fig_5B.pdf', width = 10, height = 8)
 
 ```
 
+```{r}
+# SUPP FIGURE
+# Osym is more repressed than O1. Osym and O1 have comparable induction, but noticeably lower induced expression
+induce_combo %>%
+  filter(Proximal == 'lacOscram') %>%
+ggplot(., aes(x = Distal, y= ratio)) +
+  geom_boxplot(aes(fill = Distal)) +
+  scale_fill_manual(values = pal(10)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y =     element_text(size = 20)) +
+  scale_y_log10() +
+  labs(title = 'Distribution of Induction \n by Proximal Operator in Proximal-Distal (COMBO) Promoters', 
+       y = 'Induction Ratio', x = 'Distal Operator', size = 30) +
+  annotation_logticks(sides = 'l') + geom_hline(yintercept = 1, linetype = 'dashed', color = 'red')
+
+
+```
+
+
 
 ## R Markdown
 

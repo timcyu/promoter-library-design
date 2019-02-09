@@ -34,7 +34,7 @@ require(cowplot)
 library('RInside')
 library("stringr")
 require(forcats)
-library("colorspace")
+#library("colorspace")
 #install.packages("scales")
 library(scales)
 library(RColorBrewer)
@@ -57,22 +57,22 @@ induce_multiple <- subset(induce_exp, grepl("MULTIPLE", induce_exp$name)) %>% se
 pal5 <- brewer.pal(n=5, name ='Spectral')
 
 mu <- induce_multiple %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
-mu$Proximal <- with(mu, reorder(Proximal, induction, median))
-mu$Distal_left <- with(mu, reorder(Distal_left, induction, median))
-mu$Distal_right <- with(mu, reorder(Distal_right, induction, median))
+mu$Proximal <- with(mu, reorder(Proximal, normalized_RNA_exp_Induced_12, median))
+mu$Distal_left <- with(mu, reorder(Distal_left, normalized_RNA_exp_Induced_12, median))
+mu$Distal_right <- with(mu, reorder(Distal_right, normalized_RNA_exp_Induced_12, median))
 
 
-scram_prox_avg <- median(filter(mu, Proximal == 'lacOscram')$induction)
+scram_prox_avg <- median(filter(mu, Proximal == 'lacOscram')$normalized_RNA_exp_Induced_12)
 #induce_multiple$Proximal <- with(induce_multiple, reorder(Proximal, induction, median))
 
 # PROXIMAL
-a <- ggplot(mu, aes(x = Proximal, y=induction/scram_prox_avg)) +
+a <- ggplot(mu, aes(x = Proximal, y=normalized_RNA_exp_Induced_12/scram_prox_avg)) +
   geom_boxplot(aes(fill = Proximal)) +
   scale_fill_manual(values = pal5) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y =     element_text(size = 20)) +
-  scale_y_log10(limits = c(0.01,500)) +
-  labs(title = 'Distribution of Induction:Noise \n by Proximal Operator', 
-       y = 'Induction Ratio:Noise', x = 'Proximal Operator', size = 30) +
+  scale_y_log10(limits = c(0.1,10)) +
+  labs(title = 'Distribution of Induced Expression \n by Proximal Operator', 
+       y = 'Induced Expression', x = 'Proximal Operator', size = 30) +
   annotation_logticks(sides = 'l')
 
 
@@ -80,30 +80,30 @@ a <- ggplot(mu, aes(x = Proximal, y=induction/scram_prox_avg)) +
 
 # seeing if a repressor in the distal_left site improves induction 
 # ABSOLTE TRASH, LOOKS LIKE SCRAM IS BETTER THAN OTHERS
-scram_left_avg <- median(filter(mu, Distal_left == 'lacOscram')$induction)
+scram_left_avg <- median(filter(mu, Distal_left == 'lacOscram')$normalized_RNA_exp_Induced_12)
 #induce_multiple$Distal_left <- with(induce_multiple, reorder(Distal_left, induction, median))
 
-b <- ggplot(mu, aes(x = Distal_left, y=induction/scram_left_avg)) +
+b <- ggplot(mu, aes(x = Distal_left, y=normalized_RNA_exp_Induced_12/scram_left_avg)) +
   geom_boxplot(aes(fill=Distal_left)) +
   scale_fill_manual(values = pal5) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
-  scale_y_log10(limits = c(0.01,500)) +
-  labs(title = 'Distribution of Induction:Noise \n by Left Distal Operator', 
-       y = 'Induction Ratio:Noise', x = 'Left Distal Operator', size = 30) +
+  scale_y_log10(limits = c(0.1, 10)) +
+  labs(title = 'Distribution of Induced Expression \n by Left Distal Operator', 
+       y = 'Induced Expression', x = 'Left Distal Operator', size = 30) +
   annotation_logticks(sides = 'l')
 
 # seeing if a repressor in the distal_right site improves induction 
 # BETTER THAN SCRAM, BUT NOT BY MUCH
-scram_right_avg <- median(filter(mu, Distal_right == 'lacOscram')$induction)
+scram_right_avg <- median(filter(mu, Distal_right == 'lacOscram')$normalized_RNA_exp_Induced_12)
 #induce_multiple$Distal_right <- with(induce_multiple, reorder(Distal_right, induction, median))
 
-c <- ggplot(mu, aes(x = Distal_right, y=induction/scram_right_avg)) +
+c <- ggplot(mu, aes(x = Distal_right, y=normalized_RNA_exp_Induced_12/scram_right_avg)) +
   geom_boxplot(aes(fill=Distal_right)) +
   scale_fill_manual(values = pal5) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
-  scale_y_log10(limits = c(0.01,500)) +
-  labs(title = 'Distribution of Induction:Noise \n by Right Distal Operator', 
-       y = 'Induction Ratio:Noise', x = 'Right Distal Operator', size = 30) +
+  scale_y_log10(limits = c(0.1,10)) +
+  labs(title = 'Distribution of Induced Expression \n by Right Distal Operator', 
+       y = 'Induced Expression', x = 'Right Distal Operator', size = 30) +
   annotation_logticks(sides = 'l')
 
 
@@ -112,15 +112,127 @@ ggsave('Fig_4A.pdf', width = 20, height = 8)
 ```
 
 ```{r}
+#pal_v <- choose_palette()
+# jitter this plot
+
+
+pal5 <- brewer.pal(n=5, name ='Spectral')
+
+mu <- induce_multiple %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
+#mu$Proximal <- with(mu, reorder(Proximal, ratio, median))
+#mu$Distal_left <- with(mu, reorder(Distal_left, ratio, median))
+#mu$Distal_right <- with(mu, reorder(Distal_right, ratio, median))
+
+
+scram_prox_med <- median(filter(mu, Proximal == 'lacOscram')$ratio)
+#induce_multiple$Proximal <- with(induce_multiple, reorder(Proximal, induction, median))
+
+# PROXIMAL
+a <- ggplot(mu, aes(x = Proximal, y=ratio/scram_prox_med)) +
+  geom_boxplot(aes(fill = Proximal)) +
+  #scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y =     element_text(size = 20)) +
+  scale_y_log10(limits = c(0.5,20)) +
+  labs(title = 'Distribution of Induced Expression \n by Proximal Operator', 
+       y = 'Induced Expression', x = 'Proximal Operator', size = 30) +
+    scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+
+  annotation_logticks(sides = 'l')
+
+
+# facet by Proximal 
+
+# seeing if a repressor in the distal_left site improves induction 
+# ABSOLTE TRASH, LOOKS LIKE SCRAM IS BETTER THAN OTHERS
+scram_left_med <- median(filter(mu, Distal_left == 'lacOscram')$ratio)
+#induce_multiple$Distal_left <- with(induce_multiple, reorder(Distal_left, induction, median))
+
+b <- ggplot(mu, aes(x = Distal_left, y=ratio/scram_left_med)) +
+  geom_boxplot(aes(fill=Distal_left)) +
+  #scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10(limits = c(0.5, 20)) +
+  labs(title = 'Distribution of Induced Expression \n by Left Distal Operator', 
+       y = 'Induced Expression', x = 'Left Distal Operator', size = 30) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+  annotation_logticks(sides = 'l')
+
+# seeing if a repressor in the distal_right site improves induction 
+# BETTER THAN SCRAM, BUT NOT BY MUCH
+scram_right_med <- median(filter(mu, Distal_right == 'lacOscram')$ratio)
+#induce_multiple$Distal_right <- with(induce_multiple, reorder(Distal_right, induction, median))
+
+c <- ggplot(mu, aes(x = Distal_right, y=ratio/scram_right_med)) +
+  geom_boxplot(aes(fill=Distal_right)) +
+  #scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10(limits = c(0.5,20)) +
+  labs(title = 'Distribution of Induced Expression \n by Right Distal Operator', 
+       y = 'Induced Expression', x = 'Right Distal Operator', size = 30) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+  annotation_logticks(sides = 'l')
+
+
+plot_grid(a,b,c, ncol = 3)
+
+```
+
+
+
+```{r}
 
  # subset by Proximal Osym
 ggplot(filter(induce_multiple, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
   scale_fill_viridis(name = expression('log'[10]~frac('Induction Ratio', 'Basal Expression'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
   labs(title = 'Combinatorial Induction of Left/Right Distal Sites with Consensus -10/-35', x = 'Left Distal', y = 'Right Distal', size = 20) +
-  theme(panel.background = element_rect(fill = "gray40"))
+  theme(panel.background = element_rect(fill = "gray40")) +
+  
 ggsave('Fig_4B.pdf', width = 10, height = 8)
 
 ```
+
+
+```{r}
+# COMBO vs MULTIPLE with same
+colnames(induce_combo)[colnames(induce_combo)=="Distal"] <- "Distal_right"
+
+combo_multiple_comp <- left_join(induce_combo, induce_multiple, by = c("Distal_right", 'Min_10', "Min_35", "Proximal"))
+
+# remove NA ones
+combo_multiple_comp <- combo_multiple_comp[complete.cases(combo_multiple_comp), ] %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
+
+install.packages("ggsignif")
+library(ggsignif)
+
+ggplot(combo_multiple_comp, aes(x = Distal_left, y=normalized_RNA_exp_UnInduced_12.y/normalized_RNA_exp_UnInduced_12.x)) +
+  geom_boxplot(outlier.alpha = 0) +
+  geom_jitter(aes(color=Distal_right), alpha = .5, size = 2.5) +
+  #scale_fill_manual(values = pal5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+  scale_y_log10() +
+  geom_signif(comparisons = list(c("lacOscram", "lacO1"), c("lacOscram", "lacOsym")), y_position=c(0.8, 0.8), map_signif_level=TRUE) +
+  labs(title = 'Ratio_Multiple/Ratio_Induced \n by Left Distal Operator', 
+       y = 'Ratio', x = 'Left Distal Operator', size = 30) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+  annotation_logticks(sides = 'l')
+
+# left join (by = c("Distal, Proximal"))
+
+# boxplot, x axis is distal_left (01/combo, O2/combo ... )
+
+combo_multiple_comp %>% 
+  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Distal_left, Distal_right) %>%
+  mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+  ungroup() %>%
+ggplot(., aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = mean_diff)) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression(frac('Multiple Induction', 'Combo Induction'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(title = 'Combinatorial Induction of Left/Right Distal Sites with Consensus -10/-35 and Proximal Osym/O1', x = 'Left Distal', y = 'Right Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) + 
+  geom_text(aes(label=signif(mean_diff, 3)), size=5)
+  ggsave('Fig_4B.pdf', width = 12, height = 8)
+
+```
+
 
 
 ```{r setup, include=FALSE}
