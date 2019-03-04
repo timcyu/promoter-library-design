@@ -3,12 +3,8 @@ title: "Fig3"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ```{r, include=FALSE}
-setwd("~/Desktop/induce_library/figs/")
+setwd("~/Desktop/DESKTOP/induce_library/figs/")
 
 ```
 
@@ -16,7 +12,7 @@ setwd("~/Desktop/induce_library/figs/")
 
 #install.packages('dplyr')
 library(viridis)
-library(plyr)
+#library(plyr)
 library("ggplot2")
 library("dplyr")
 library("tidyr")
@@ -35,6 +31,8 @@ library(scales)
 
 ```{r}
 induce_exp <- read.table("induce_library/processed_data/induce_exp.txt", header = T)
+
+induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
 
 induce_distal <- subset(induce_exp, grepl("DISTAL", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Offset", "Min_35", "Core", "Min_10"), sep = "-", remove = F)
 
@@ -67,42 +65,42 @@ co <- induce_combo %>% filter((Proximal == 'lacO1' | Proximal == 'lacO2' | Proxi
 (Distal == 'lacO1' | Distal == 'lacO2' | Distal == 'lacO3' | Distal == 'lacOsym' | Distal == 'lacOscram')) %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
 
 di <- induce_distal %>%
-  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
-  group_by(Offset) %>%
-  mutate(mean_ind = mean(ratio)) %>%
-  ungroup() %>%
-  filter(mean_ind == max(mean_ind)) 
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons', Offset == 22)
+ # group_by(Offset) %>%
+#  dplyr::mutate(mean_ind = mean(ratio)) %>%
+#  ungroup() %>%
+#  filter(mean_ind == max(mean_ind)) 
 
 st <- filter(induce_steric, Min_10 == 'minus10cons', Loop_Distance == 55, UP == 'up_326x' | UP == 'up136x', Extended_Min_10 == 'ext_min10')
 
 mu <- filter(induce_multiple, Min_10 == 'minus10cons', Min_35 == 'minus35cons')
 
 # FIGURE 3B: Combinatorial Induction:Noise of Pcombo, Pdistal, and Psteric next to one another
-a <- ggplot(di, aes(x = Core, y = Distal)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) +  
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = element_text(size = 10)) +
-  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) +
-  scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
-  scale_x_discrete(limits=c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
+#a <- ggplot(di, aes(x = Core, y = Distal)) + geom_tile(aes(fill = #log10(ratio/normalized_RNA_exp_UnInduced_12))) +  
+#  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = #element_text(size = 10)) +
+#  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) +
+#  scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
+#  scale_x_discrete(limits=c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
 
 #  labs(title = 'Combinatorial UnInduced Expression of Core and Distal Operator Sites with Consensus -10/-35', x = 'Core', y = 'Distal', size = 30) +
- theme(panel.background = element_rect(fill = "gray40"))
+# theme(panel.background = element_rect(fill = "gray40"))
 
-b <- ggplot(co, aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = element_text(size = 10)) +
-  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) + scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
-scale_x_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + 
-theme(panel.background = element_rect(fill = "gray40"))
+#b <- ggplot(co, aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = element_text(size = 10)) +
+#  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) + scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
+#scale_x_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + 
+#theme(panel.background = element_rect(fill = "gray40"))
 #  labs(title = 'Combinatorial UnInduced Expression of Core and Distal Operator Sites with Consensus -10/-35', x = 'Proximal', y = 'Distal', size = 30) +
 #  
 
-c <- ggplot(st, aes(x = Core, y = Proximal)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) +  
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = element_text(size = 10)) +
-  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) +
-  scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
-  scale_x_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
+#c <- ggplot(st, aes(x = Core, y = Proximal)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) +  
+#  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.text.y = element_text(size = 10)) +
+#  scale_fill_viridis(name = 'Induction:Noise', limits = c(-2.2, 1.6)) +
+#  scale_y_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
+#  scale_x_discrete(limits=c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
 #  labs(title = 'Combinatorial UnInduced Expression of Core and Distal Operator Sites with Consensus -10/-35', x = 'Core', y = 'Proximal', size = 30) +
-  theme(panel.background = element_rect(fill = "gray40"))
+#  theme(panel.background = element_rect(fill = "gray40"))
 
-plot_grid(a,b,c, ncol = 3) 
+#plot_grid(a,b,c, ncol = 3) 
 ```
 
 
@@ -170,6 +168,12 @@ induce_distal %>%
   mutate(normalized_ratio = ratio/scram_ratio) %>%
   ggplot(., aes(x = Offset, y = normalized_ratio)) + geom_boxplot() + scale_y_log10()
     
+induce_distal %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Core == 'lacOsym') %>%
+  ggplot(aes(x = Offset, y = normalized_RNA_exp_UnInduced_12)) + geom_point(aes(color = Core)) + 
+  geom_smooth(method = 'lm', span = 0.7, se = FALSE) +
+  scale_y_log10() +
+  facet_wrap(~Distal, scales = 'fixed')
 
 
 #%>%
@@ -235,15 +239,16 @@ pal3 <- c('#EE2524', '#EBCC2A', '#3B9BB3', '#5D478B')
 ggplot(basal_exp, aes(x=normalized_RNA_exp_UnInduced_12, y=ratio)) + geom_point(aes(color=Library), alpha = .9, size = 2.5) + scale_color_manual(values = pal3) +
 annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + geom_smooth(aes(color = Library), method = 'gam', formula = y ~ x, se = FALSE) + 
   scale_y_log10(breaks = c(1,10,100)) + xlab('Basal Expression') + ylab('Induction Ratio') + labs(title = 'Induction Ratio vs. Basal Expression')
-ggsave('Fig_3B.pdf', width = 10, height = 8)
+#ggsave('Fig_3B.pdf', width = 10, height = 8)
 
 ```
 
 ```{r}
 
 ggplot(basal_exp, aes(x=normalized_RNA_exp_UnInduced_12, y=normalized_RNA_exp_Induced_12)) + geom_point(aes(color=Library), alpha = .9, size = 3.5, alpha = 0.8) + scale_color_manual(values = pal3) +
-annotation_logticks() + scale_x_log10(breaks = c(0,1,10,100)) + scale_y_log10(breaks = c(0,1,10,100)) + xlab('Basal Expression') + ylab('Induced Expression') + labs(title = 'Induced Expression vs Basal Expression') + geom_abline(intercept = 0, slope = c(1,2,4,8), color = 'black', linetype = 'dashed', size = 0.75) + geom_text(aes(x = 1.5, y = 120, label = '8x')) + geom_text(aes(x = 2.7, y = 120, label = '4x')) + geom_text(aes(x = 8.7, y = 120, label = '2x')) + geom_text(aes(x = 91, y = 120, label = '1x'))
-ggsave('Fig_3B.pdf', width = 10, height = 8)
+annotation_logticks() + scale_x_log10(breaks = c(0,1,10,100)) + scale_y_log10(breaks = c(0,1,10,100)) + xlab('Basal Expression') + ylab('Induced Expression') + geom_abline(intercept = 0, slope = c(1,2,4,8), color = 'black', linetype = 'dashed', size = 0.75) + geom_text(aes(x = 1.5, y = 120, label = '8x'), size =7) + geom_text(aes(x = 2.7, y = 120, label = '4x'), size = 7) + geom_text(aes(x = 8.7, y = 120, label = '2x'), size = 7) + geom_text(aes(x = 91, y = 120, label = '1x'), size = 7) +
+theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+ggsave('Fig_4A.png', width = 10, height = 8) 
 
 ```
 
@@ -256,7 +261,9 @@ a1 <- ggplot(basal_exp, aes(x = Library, y = normalized_RNA_exp_UnInduced_12)) +
   scale_color_manual(values = pal3) + 
   scale_y_log10() +
   annotation_logticks(sides = 'l') + 
-  ylab('Basal Expression') + xlab('Promoter Architecture') + labs(title = 'Variation in basal expression levels \n across different promoter architectures') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))
+  ylab('Basal Expression') + xlab('Promoter Architecture') + 
+  #labs(title = 'Variation in basal expression levels \n across different promoter architectures') + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + scale_x_discrete(limits = c("COMBO", "MULTIPLE", "DISTAL", "STERIC")) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
 
 a2 <- ggplot(basal_exp, aes(x = Library, y = ratio)) +
   geom_boxplot(outlier.shape = NA) +
@@ -264,10 +271,12 @@ a2 <- ggplot(basal_exp, aes(x = Library, y = ratio)) +
   scale_color_manual(values = pal3) + 
   scale_y_log10() +
   annotation_logticks(sides = 'l') + 
-  ylab('Induction Ratio') + xlab('Promoter Architecture') + labs(title = 'Variation in induction ratio levels \n across different promoter architectures') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))
+  ylab('Induction Ratio') + xlab('Promoter Architecture') +
+#+ labs(title = 'Variation in induction ratio levels \n across different promoter architectures') 
+theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + scale_x_discrete(limits = c("COMBO", "MULTIPLE", "DISTAL", "STERIC")) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
 
 plot_grid(a1, a2)
-ggsave('Fig_4B.pdf', width = 14, height = 8)
+ggsave('Fig_4B.png', width = 14, height = 8)
 ```
 
 ```{r}
@@ -298,7 +307,7 @@ c <- ggplot(NULL, aes(x = "", y = ratio/normalized_RNA_exp_UnInduced_12)) +
   ylab('Induction Ratio:Noise') + xlab('Promoter Architecture') + labs(title = 'Variation in Induction Ratio:Noise \n across different promoter architectures') + scale_y_log10() + annotation_logticks(sides = "l") + scale_x_discrete(limits = c("Distal", "Combo", "Multiple", "Steric")) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) 
 
 plot_grid(a,b,c, ncol = 3)
-ggsave('Fig_3C.pdf', width = 25, height = 8)
+#ggsave('Fig_3C.pdf', width = 25, height = 8)
 
 ```
 
@@ -330,18 +339,19 @@ pal4 <- brewer.pal(n=4, name ='RdBu')
 
 gg1 <- steric_box %>%
   ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_UnInduced_12, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Basal Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))
+  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Basal Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
                   
 gg2 <- steric_box %>%
   ggplot(., aes(fill = Min_10, y = ratio, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))             
+  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+
 gg3 <- steric_box %>%
   ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_Induced_12, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10))                                                        
+  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))                                                   
 gg <- plot_grid(gg2, gg3)
-title <- ggdraw() + draw_label("Optimizing Proximal-Core (STERIC) promoters by swapping out UP and extended -10 elements", fontface='bold')
-plot_grid(title, gg, ncol = 1, rel_heights=c(0.1, 1))
-ggsave('Fig_3D.pdf', width = 20, height = 8)                                                                                                                                                                                                
+#title <- ggdraw() + draw_label("Optimizing Proximal-Core (STERIC) promoters by swapping out UP and extended -10 elements", fontface='bold')
+plot_grid(gg, ncol = 1, rel_heights=c(0.1, 1))
+ggsave('Fig_3C.png', width = 20, height = 8)                                                                                                                                                                                                
                                                                                                                                                                                                    
 
 ```
@@ -363,14 +373,149 @@ ggsave('Fig_3E.pdf', width = 10, height = 8)
 ```
 
 
-
-
-
-
 ```{r}
 
 ggplot(induce_steric, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) +
 geom_point(alpha = .4) + geom_smooth(method='gam', color = 'dodgerblue2') + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced expression') + ylab('Induced expression') + labs(title = 'Comparing promoter expression between induced and uninduced') +  geom_point(data=filt_ind_steric, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12), color = "firebrick1", alpha = .8, size = 3)
+
+
+```
+
+
+```{r}
+combo_scram_exp <- filter(induce_combo, Proximal == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons')$normalized_RNA_exp_UnInduced_12
+
+combo_comp <- induce_combo %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Distal == 'lacOscram') %>%
+  dplyr::mutate(norm_exp = normalized_RNA_exp_UnInduced_12/combo_scram_exp) %>%
+  select(Library, Proximal, norm_exp) %>%
+  filter(Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOsym' | Proximal == 'lacOscram')
+
+distal_scram_exp <- mean(filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22)$normalized_RNA_exp_UnInduced_12)
+
+distal_comp <- induce_distal %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Distal == 'lacOscram', Offset == 22) %>%
+  group_by(Core) %>%
+  dplyr::mutate(norm_exp = mean(normalized_RNA_exp_UnInduced_12)/distal_scram_exp) %>%
+  ungroup() %>%
+  select(Library, Proximal = Core, norm_exp) %>%
+  unique(.)
+
+distal_combo_comp <- bind_rows(combo_comp, distal_comp)
+
+filler <- c("midnightblue", "orange") 
+ggplot(distal_combo_comp, aes(fill = Library, y = norm_exp, x = Proximal)) + 
+  geom_bar(position = "dodge", stat = 'identity') + 
+  scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
+  labs(x = 'Proximal/Core', y = 'Normalized uninduced expression') + 
+  scale_fill_manual(values = filler)
+
+distal_scram <- induce_distal %>%
+  filter(Distal == 'lacOscram', Core == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons')
+
+
+induce_distal %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Distal == 'lacOscram') %>%
+  group_by(Offset) %>%
+  ggplot(., aes(x = Core, y = normalized_RNA_exp_UnInduced_12, fill = Offset)) + geom_bar(stat = 'identity', position = 'dodge')
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+  #+ labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))                                                   
+gg <- plot_grid(gg2, gg3)
+
+
+
+
+good_distal <- left_join(induce_combo, induce_distal, by = c("Distal", 'Min_10', "Min_35", "Proximal" = "Core")) %>%
+  filter(Distal == 'lacOscram', (Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOsym')) %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  filter(ratio.y > ratio.x)
+
+# DISTAL / COMBO
+# with a consensus -10/-35, O1 and Osym are better in the core than the proximal. O1 is way better than Osym though.
+log2mean_diff <- unique(distal_combo_comp$mean_diff)
+prox_core_elt <- c("lacOsym", "lacO1", "lacO2", "lacO3")
+
+comp <- data.frame(prox_core_elt, log2mean_diff)
+ggplot(comp, aes(x=prox_core_elt, y = log2mean_diff)) + geom_bar(stat = "identity") + scale_x_discrete(limits = c("lacO3", "lacO2", "lacO1", "lacOsym"))
+
+# COMPARISON OF OSYM AND O1
+induce_distal %>%
+  filter((Core == 'lacOsym' | Core == 'lacO1'), Distal == 'lacOscram') %>% 
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  ggplot(., aes(x = Core, y = Offset)) + geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) + scale_fill_viridis(name = 'log2(Uninduced Expression)', limits = c(0.7,6)) 
+
+d2 <- induce_distal %>%
+  filter((Core == 'lacOsym' | Core == 'lacO1')) %>% 
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  ggplot(., aes(x = Core, y = Offset)) + geom_tile(aes(fill = log2(normalized_RNA_exp_Induced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) + scale_fill_viridis(name = 'log2(Induced Expression)', limits = c(4.2, 7))
+
+plot_grid(d1, d2) 
+#ggsave('Supp1.png', height = 6, width = 8)
+
+```
+```{r}
+combo_scram_exp <- filter(induce_combo, Proximal == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons')$normalized_RNA_exp_UnInduced_12
+
+combo_comp <- induce_combo %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Distal == 'lacOscram') %>%
+  dplyr::mutate(norm_exp = normalized_RNA_exp_UnInduced_12/combo_scram_exp) %>%
+  select(Library, Proximal, norm_exp) %>%
+  filter(Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOsym' | Proximal == 'lacOscram')
+
+distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>% select(Offset, normalized_RNA_exp_UnInduced_12)
+
+distal_comp <- left_join(induce_distal, distal_scram_exp, by = 'Offset') %>%
+  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  dplyr::mutate(norm_exp = normalized_RNA_exp_UnInduced_12.x/normalized_RNA_exp_UnInduced_12.y) %>%
+  select(Library, Proximal = Core, Distal, Offset, norm_exp) %>%
+  unique(.)
+distal_comp <- distal_comp[!is.na(distal_comp$norm_exp),]
+
+pal5 <- brewer.pal(n=5, name ='RdYlBu')
+distal_comp$Distal <- factor(distal_comp$Distal, levels = c('lacOscram','lacO3','lacO2','lacO1','lacOsym'))
+
+ggplot(distal_comp, aes(y = log2(norm_exp), fill = Distal, x = Proximal)) + 
+  geom_bar(position = "dodge", stat = 'identity') + 
+  #geom_boxplot(outlier.shape = NA) +
+  #geom_jitter(aes(color = Distal)) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
+  labs(x = 'Core', y = 'log2(Normalized uninduced expression)') + 
+#  scale_fill_manual(values = pal5) +
+  scale_fill_viridis(discrete = TRUE) +
+  facet_wrap(~Offset) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15))
+ggsave('lol.png', width = 20, height = 10)
+
+```
+
+```{r}
+
+distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22)$normalized_RNA_exp_UnInduced_12
+
+ggplot(filter(induce_distal, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22), aes(x = Core, y = Distal)) + geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12/distal_scram_exp))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'(Normalized uninduced expression)')) +
+  labs(x = 'Core', y = 'Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  #theme(axis.text=element_text(size=14), axis.title=element_text(size = 14)) +
+  scale_x_discrete(limits = c("lacOscram",  "lacO3", "lacO2", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "lacO3", "lacO2", "lacO1", "lacOsym"))
+
+#ggsave('Fig_2B.pdf', width = 10, height = 8)
 
 
 ```

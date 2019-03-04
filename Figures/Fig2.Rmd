@@ -3,21 +3,29 @@ title: "Fig1"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ```{r message=FALSE, warning=FALSE}
 # set your working directory
-setwd("~/Desktop/induce_library/figs/")
+setwd("~/Desktop/DESKTOP/induce_library/figs/")
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, warning = FALSE}
 #install.packages('nnet')
+#install.packages('viridis')
+#install.packages('plyr')
+#install.packages('ggplot2')
+#install.packages('dplyr')
+#install.packages('tidyr')
+#install.packages('ggjoy')
+#install.packages('reshape2')
+#install.packages('RInside')
+#install.packages('stringr')
+#install.packages('forcats')
+#install.packages('colorspace')
+#install.packages('cowplot')
 
 library(nnet)
 library(viridis)
-library(plyr)
+#library(plyr)
 library("ggplot2")
 library("dplyr")
 library("tidyr")
@@ -37,11 +45,11 @@ induce_exp <- read.table("induce_library/processed_data/induce_exp.txt", header 
 induce_combo <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F)
 #%>% select("variant", "name", "Distal", "Min_35", "Min_10", "Proximal", "normalized_RNA_exp_UnInduced_12", "normalized_RNA_exp_Induced_12", 'ratio')
 
-write.table(induce_combo, "~/Desktop/induce_library/processed_data/induce_combo.txt", quote = F, row.names = F, sep = '\t')
+write.table(induce_combo, "~/Desktop/DESKTOP/induce_library/processed_data/induce_combo.txt", quote = F, row.names = F, sep = '\t')
 
 induce_combo_nulldistal <- subset(induce_exp, grepl("COMBO", induce_exp$name)) %>% separate(col = 'name', into = c("Library", "Distal", "Min_35", "Min_10", "Proximal"), sep = "-", remove = F) %>% filter(Distal == 'lacOscram') %>% select("variant", "name", "Distal", "Min_35", "Min_10", "Proximal", "normalized_RNA_exp_UnInduced_12", "normalized_RNA_exp_Induced_12", 'ratio')
 
-write.table(induce_combo_nulldistal, "~/Desktop/induce_library/processed_data/induce_combo_nulldistal.txt", quote = F, row.names = F, sep = '\t')
+write.table(induce_combo_nulldistal, "~/Desktop/DESKTOP/induce_library/processed_data/induce_combo_nulldistal.txt", quote = F, row.names = F, sep = '\t')
 
 
 # ordering for tile plots
@@ -63,8 +71,10 @@ legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
 
 ggplot(induce_combo, aes(normalized_RNA_exp_UnInduced_12, normalized_RNA_exp_Induced_12)) + geom_point(aes(color=Proximal), size = 3, alpha = .6) + scale_color_manual(values = pal(10), breaks = legend_ord) +
   geom_smooth(method='gam', color = 'brown4') + annotation_logticks() + scale_x_log10(breaks = c(1,10,100)) + 
-  scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced expression') + ylab('Induced expression') + labs(title = 'Comparing promoter expression between induced and uninduced') 
-ggsave('Fig_2B.pdf', width = 10, height = 8)
+  scale_y_log10(breaks = c(1,10,100)) + xlab('Uninduced expression') + ylab('Induced expression') + 
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+  #labs(title = 'Comparing promoter expression between induced and uninduced') 
+ggsave('Fig_2A.png', width = 10, height = 8)
 
 
 ```
@@ -76,11 +86,14 @@ ggsave('Fig_2B.pdf', width = 10, height = 8)
 #scram_ind <- filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons', )
 
 ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
-  scale_fill_viridis(name = expression('log'[2]~'(Normalized Induction Ratio)')) +
-  labs(title = 'Combinatorial Induction of Proximal and Distal Sites with Consensus -10/-35', x = 'Proximal', y = 'Distal', size = 20) +
-  theme(panel.background = element_rect(fill = "gray40")) + 
-  geom_text(aes(label=signif(ratio, 3)), size=3)
+  scale_fill_viridis(name = expression('log'[2]~'(Induction Ratio)')) +
+  labs(x = 'Proximal', y = 'Distal', size = 20) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14)) +
+  scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
+  scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym"))
 
+ggsave('Fig_2B.pdf', width = 10, height = 8)
 
 #induce_combo %>%
 #  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons', Proximal == 'lacOscram', Distal == 'lacOscram') %>%
@@ -111,7 +124,23 @@ ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), 
 
 induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   group_by(Min_10, Min_35) %>%
-  mutate(combo_ratio=mean(ratio),
+  dplyr::mutate(combo_ratio=mean(ratio),
+         combo_uninduced=mean(normalized_RNA_exp_UnInduced_12),
+         combo_svn = (combo_ratio/combo_uninduced)) %>%
+  select(Min_10, Min_35, combo_ratio, combo_uninduced, combo_svn) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_uninduced))) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'Basal Expression')) + theme(legend.title = element_text(size = 15)) +
+  labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  geom_text(aes(label=signif(combo_uninduced, 3)), size=5) + 
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+ggsave('Supp2.png', width = 10, height = 7)
+
+induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  dplyr::mutate(combo_ratio=mean(ratio),
          combo_uninduced=mean(normalized_RNA_exp_UnInduced_12),
          combo_svn = (combo_ratio/combo_uninduced)) %>%
   select(Min_10, Min_35, combo_ratio, combo_uninduced, combo_svn) %>%
@@ -122,51 +151,32 @@ induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   labs(title = expression(bold('Combinatorial Induction:Noise of -10 and -35 elements with O'[sym]~' and O'[1])), x = 'Minus 10', y = 'Minus 35', size = 30) +
   theme(panel.background = element_rect(fill = "gray40")) +
   geom_text(aes(label=signif(combo_svn, 3)), size=5)
-ggsave('Fig_2D.pdf', width = 10, height = 6)
 
-```
-
-```{r}
-induce_combo <- mutate(induce_combo, log_ratio = log10(ratio/normalized_RNA_exp_UnInduced_12))
-train_size <- floor(0.75*nrow(induce_combo)) # get 75% of the data
-
-set.seed(123) 
-train_ind <- sample(seq_len(nrow(induce_combo)), size = train_size)
-train_set <- induce_combo[train_ind, ] # training set for linear model
-test_set <- induce_combo[-train_ind, ] # attempt to predict test set
-
-# plotting
-test_set$Proximal  <- with(test_set, reorder(Proximal,ratio, median))
-legend_ord <- levels(with(test_set, reorder(Proximal,-ratio, median)))
-
-# FIGURE 2E: Neural Network
-
-#train neural network on all sequence elements
-fit <- nnet(log_ratio ~ Min_10 + Min_35 + Distal + Proximal, 
-            data=train_set, size=4, maxit=150, linout=T, decay=0.01)
-
-# make predictions
-test_set$predicted_exp_NN <- predict(fit, test_set, type="raw")
-
-#corr <- summary(lm(log_ratio ~ predicted_exp_NN, test_set))$r.square
-corr_NN <- cor(test_set$log_ratio, test_set$predicted_exp_NN)
-
-test_set$Proximal  <- with(test_set, reorder(Proximal,ratio, median))
-legend_ord <- levels(with(test_set, reorder(Proximal,-ratio, median)))
-
-ggplot(test_set, aes(10^predicted_exp_NN, 10^log_ratio, color = Proximal)) + 
-  geom_point(alpha = .6, size = 4) +
-  annotate("text", x =1.0, y = 10, 
-           label = paste('r==', signif(corr_NN, 3)), parse = T) +
-  #scale_color_manual(name = 'Proximal Site', breaks = legend_ord) + 
-  scale_x_log10(limits = c(0.6,25)) + scale_y_log10(limits = c(0.3,25)) + 
-  annotation_logticks() + 
-  xlab('Predicted Induction') +
-  ylab('Actual Induction') +
-  ggtitle('Using Neural Network to Predict Variant Induction')
-ggsave('Fig_2E.pdf', width = 10, height = 6)
+# SCRAMMED CASE
+induce_combo %>% filter(Proximal == 'lacOscram' & Distal == 'lacOscram') %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12))) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'Basal Expression')) + theme(legend.title = element_text(size = 15)) +
+  labs(title = 'Combinatorial Basal Expression of -10 and -35 elements with Oscram', x = 'Minus 10', y = 'Minus 35', size = 30) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  geom_text(aes(label=signif(normalized_RNA_exp_UnInduced_12, 3)), size=5)
 
 
+induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  mutate(combo_ratio=mean(ratio)) %>%
+  select(Min_10, Min_35, combo_ratio) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_ratio))) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'Induction Ratio'), limits = c(0, 2.7)) + theme(legend.title = element_text(size = 15)) +
+  labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  geom_text(aes(label=signif(combo_ratio, 3)), size=5) +
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+ggsave('Fig_2C.png', width = 10, height = 7)
+
+#plot_grid(a, b)
 
 ```
 
@@ -284,6 +294,7 @@ c <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_exp), color = Prox
 ```
 
 ```{r}
+# GOOD ONE
 induce_combo <- mutate(induce_combo, log_exp = log10(normalized_RNA_exp_UnInduced_12))
 induce_combo$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
 
@@ -296,9 +307,69 @@ train_ind <- sample(seq_len(nrow(overall_set)), size = train_size)
 train_set <- overall_set[train_ind, ] # training set for linear model
 test_set <- overall_set[-train_ind, ] # attempt to predict test set
 
+# PRETTY GOOD
+lmfit <- train_set %>%
+  dplyr::select(log_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_exp ~ (Min_10*Min_35):Proximal, data=., model = T)
+
+lmfit <- train_set %>%
+  dplyr::select(log_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_exp ~ (Min_10*Min_35):Proximal + Min_10 + Min_35, data=., model = T)
+anova(lmfit)
+# A*B = A + B + A:B
+
+test_set$predicted_exp <- predict(lmfit, test_set) #predict expression of test data
+corr_lm <- cor(test_set$log_exp, test_set$predicted_exp) # 0.61 with 75% training data
+
+# plotting
+#test_set$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+# Predicting NULL DISTAL promoters with 75% of data trained
+ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 3) +
+  annotate("text", x = 0, y = 4, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Basal Expression') + ylab('Actual Basal Expression') 
+ggsave('Fig_2D.png', height = 8, width = 10)
+
+#  ggtitle('Training Set: 75% of library on -10/-35/proximal+distal \n Test Set: remaining 25% of library')
+
+
+#plot_grid(a, b, c, d, ncol = 2)
+#ggsave('lm.pdf', height = 8, width = 10)
+```
+
+```{r}
+
+library(MASS)
+cpu.mod1 = lm(log_exp ~ Proximal + Min_10 + Min_35 + Distal, data = train_set)
+dropterm(cpu.mod1, test = "F")
+# Distal sucks lol
+
+
+
+induce_combo <- mutate(induce_combo, log_exp = log10(normalized_RNA_exp_UnInduced_12))
+induce_combo$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
+
+overall_set <- induce_combo
+train_size <- floor(0.75*nrow(overall_set)) # get 75% of the data
+
+set.seed(123) 
+train_ind <- sample(seq_len(nrow(overall_set)), size = train_size)
+
+train_set <- overall_set[train_ind, ] # training set for linear model
+test_set <- overall_set[-train_ind, ] # attempt to predict test set
+
+# PRETTY GOOD
 lmfit <- train_set %>%
   select(log_exp, Distal, Min_35, Min_10, Proximal) %>%
-  lm(formula= log_exp ~ Min_10 + Min_35 + Min_10*Min_35 + Proximal*Distal, data=., model = T)
+  lm(formula= log_exp ~ (Min_10*Min_35):Proximal, data=., model = T)
+
+#lmfit <- train_set %>%
+#  select(log_exp, Distal, Min_35, Min_10, Proximal) %>%
+#  lm(formula= log_exp ~ Min_10*Min_35 + Proximal + (Min_10*Min_35):Proximal, data=., model = T)
 
 # A*B = A + B + A:B
 
@@ -310,54 +381,287 @@ corr_lm <- cor(test_set$log_exp, test_set$predicted_exp) # 0.61 with 75% trainin
 legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
 
 # Predicting NULL DISTAL promoters with 75% of data trained
-d <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_exp), color = Proximal)) +
-  geom_point(alpha = .6, aes(color = Proximal), size = 2.5) +
+ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 3) +
   annotate("text", x = 0, y = 4, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
   scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
    annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
-  xlab('Predicted Basal Expression') + ylab('Actual Basal Expression') +
-  ggtitle('Training Set: 75% of library on -10/-35/proximal/distal \n Test Set: remaining 25% of library') 
+  xlab('Predicted Basal Expression') + ylab('Actual Basal Expression') 
+#ggsave('Fig_2D.png', height = 8, width = 10)
 
-plot_grid(a, b, c, d, ncol = 2)
-ggsave('linear_model.pdf', height = 10, width = 11)
+#  ggtitle('Training Set: 75% of library on -10/-35/proximal+distal \n Test Set: remaining 25% of library')
+
+
+#plot_grid(a, b, c, d, ncol = 2)
+#ggsave('lm.pdf', height = 8, width = 10)
 ```
-
 
 ```{r}
 induce_combo %>%
   ggplot() + geom_histogram(aes(normalized_RNA_exp_UnInduced_12), fill = 'dodgerblue4', alpha = 0.7, binwidth = 0.1) + geom_histogram(aes(normalized_RNA_exp_Induced_12), fill = 'firebrick1', alpha = 0.7, binwidth = 0.1) + facet_wrap(~Min_10+Min_35, labeller = label_wrap_gen(multi_line=FALSE)) + xlab("Expression") + scale_x_log10()
 
+```
+
+
+```{r}
+#train neural network on all sequence elements
+set.seed(123)
+fit <- nnet(log_exp ~ Min_10 + Min_35 + Proximal + Distal, 
+            data=train_set, size=4, maxit=300, linout=T, decay=0.01)
+
+# make predictions
+test_set$predicted_exp_NN <- predict(fit, test_set, type="raw")
+
+corr_NN <- cor(test_set$log_exp, test_set$predicted_exp_NN) # 0.61 with 75% training data
+
+#test$Minus35  <- with(test, reorder(Minus35,RNA_exp_average, median))
+#legend_ord <- levels(with(test, reorder(Minus35,-RNA_exp_average, median)))
+
+ggplot(test_set, aes(log2(10^predicted_exp_NN), log2(10^log_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 3) +
+  annotate("text", x = 0, y = 4, label = paste('r ==', signif(corr_NN, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Basal Expression') + ylab('Actual Basal Expression')
+#+ labs(title = 'Using a neural network to predict basal expression \n Training set: 75% of library on -10/-35/Proximal/Distal \n Test set: remaining 25% of library')
+ggsave('Fig_2E.png', height = 8, width = 10) 
+#install.packages('umap')
+#install.packages('purrr')
+
+#library(umap)
+#library(purrr)
+
+#hyper <- expand.grid(c(1), seq(100, 200, 100)) %>% as_tibble
+
+#umap_test <- hyper %>%
+#  dplyr::rename(nodes = Var1, it = Var2) %>%
+#  mutate(UMAP = map2(nodes, it, ~nnet(log_exp ~ Min_10 + Min_35 + Proximal + Distal, data = small, maxit=.y, size=.x)))
+#%>% unlist() %>% as_tibble() %>% unnest()
+
+                   # %$% layout %>% as_tibble())) %>% unnest()
+#ggplot(umap_test, aes(x=V1, y=V2)) +
+#  geom_point(alpha = .5) +
+#  facet_wrap(its ~ nodes, scales='free')
 
 
 ```
 
 ```{r}
+
+# PREDICTING NULL DISTAL
+induce_combo <- mutate(induce_combo, log_ind_exp = log10(normalized_RNA_exp_Induced_12))
+induce_combo$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
+
+overall_set <- filter(induce_combo, Distal == 'lacOscram')
+train_size <- floor(0.75*nrow(overall_set)) # get 75% of the data
+
+set.seed(123) 
+train_ind <- sample(seq_len(nrow(overall_set)), size = train_size)
+
+train_set <- overall_set[train_ind, ] # training set for linear model
+test_set <- overall_set[-train_ind, ] # attempt to predict test set
+
+lmfit <- train_set %>%
+  select(log_ind_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_ind_exp ~ Min_10 + Min_35 + Min_10*Min_35, data=., model = T)
+
+# A*B = A + B + A:B
+
+test_set$predicted_exp <- predict(lmfit, test_set) #predict expression of test data
+corr_lm <- cor(test_set$log_ind_exp, test_set$predicted_exp) # 0.61 with 75% training data
+
+# plotting
+#test_set$Proximal  <- with(test_set, reorder(Proximal,ratio, median))
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+# Predicting NULL DISTAL promoters with 75% of data trained
+ind_a <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_ind_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 2.5) +
+  annotate("text", x = 3, y = 4, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Induced Expression') + ylab('Actual Induced Expression') +
+  ggtitle('Training Set: 75% of null distal on -10/-35 \n Test Set: remaining 25% of null distal') 
+
+# TRAIN ON NULL DISTAL, PREDICT REST OF LIBRARY
+train_set <- filter(induce_combo, Distal == 'lacOscram')
+test_set <- filter(induce_combo, Distal != 'lacOscram') # attempt to predict test set
+
+lmfit <- train_set %>%
+  select(log_ind_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_ind_exp ~ Min_10 + Min_35 + Min_10*Min_35, data=., model = T)
+
+# A*B = A + B + A:B
+
+test_set$predicted_exp <- predict(lmfit, test_set) #predict expression of test data
+corr_lm <- cor(test_set$log_ind_exp, test_set$predicted_exp) # 0.61 with 75% training data
+
+# plotting
+#test_set$Proximal  <- with(test_set, reorder(Proximal,normalized_RNA_exp_UnInduced_12, median))
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+# Predicting rest of COMBO library with NULL DISTAL promoters are training set
+ind_b <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_ind_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 2.5) +
+  annotate("text", x = 1, y = 5, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Induced Expression') + ylab('Actual Induced Expression') +
+  ggtitle('Training Set: null distal on -10/-35 \n Test Set: remainder of library') 
+
+
+# Predicting rest of COMBO library with NULL DISTAL + proximal site
+lmfit <- train_set %>%
+  select(log_ind_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_ind_exp ~ Min_10*Min_35 + Proximal, data=., model = T)
+
+# A*B = A + B + A:B
+
+test_set$predicted_exp <- predict(lmfit, test_set) #predict expression of test data
+corr_lm <- cor(test_set$log_ind_exp, test_set$predicted_exp) # 0.61 with 75% training data
+
+# plotting
+#test_set$Proximal  <- with(test_set, reorder(Proximal,normalized_RNA_exp_UnInduced_12, median))
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+# Predicting rest of COMBO library with NULL DISTAL promoters are training set
+ind_c <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_ind_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 2.5) +
+  annotate("text", x = 1, y = 5, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Induced Expression') + ylab('Actual Induced Expression') +
+  ggtitle('Training Set: null distal on -10/-35/proximal \n Test Set: remainder of library')
+
+# TRAIN ON 75% OF LIBRARY, PREDICT OTHER 25%
+
+overall_set <- induce_combo
+train_size <- floor(0.75*nrow(overall_set)) # get 75% of the data
+
+set.seed(123) 
+train_ind <- sample(seq_len(nrow(overall_set)), size = train_size)
+
+train_set <- overall_set[train_ind, ] # training set for linear model
+test_set <- overall_set[-train_ind, ] # attempt to predict test set
+
+lmfit <- train_set %>%
+  select(log_ind_exp, Distal, Min_35, Min_10, Proximal) %>%
+  lm(formula= log_ind_exp ~ Min_10 + Min_35 + Min_10*Min_35 + Proximal + Distal, data=., model = T)
+
+# A*B = A + B + A:B
+
+test_set$predicted_exp <- predict(lmfit, test_set) #predict expression of test data
+corr_lm <- cor(test_set$log_ind_exp, test_set$predicted_exp) # 0.61 with 75% training data
+
+# plotting
+#test_set$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
+legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
+
+# Predicting NULL DISTAL promoters with 75% of data trained
+ind_d <- ggplot(test_set, aes(log2(10^predicted_exp), log2(10^log_ind_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 3) +
+  annotate("text", x = 0, y = 4, label = paste('r ==', signif(corr_lm, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Induced Expression') + ylab('Actual Induced Expression') +
+  ggtitle('Training Set: 75% of library on -10/-35/proximal+distal \n Test Set: remaining 25% of library')
+plot_grid(ind_a, ind_b, ind_c, ind_d, ncol = 2)
+ggsave('induced_lm.png', height = 8, width = 10)
+```
+
+
+
+```{r}
+#train neural network for induced expression
+set.seed(123)
+fit <- nnet(log_ind_exp ~ Min_10 + Min_35 + Proximal + Distal, 
+            data=train_set, size=4, maxit=300, linout=T, decay=0.01)
+
+# make predictions
+test_set$predicted_exp_NN <- predict(fit, test_set, type="raw")
+
+corr_NN <- cor(test_set$log_ind_exp, test_set$predicted_exp_NN) # 0.61 with 75% training data
+
+#test$Minus35  <- with(test, reorder(Minus35,RNA_exp_average, median))
+#legend_ord <- levels(with(test, reorder(Minus35,-RNA_exp_average, median)))
+
+ggplot(test_set, aes(log2(10^predicted_exp_NN), log2(10^log_ind_exp), color = Proximal)) +
+  geom_point(alpha = .6, aes(color = Proximal), size = 3) +
+  annotate("text", x = 0, y = 4, label = paste('r ==', signif(corr_NN, 3)), parse = T) +
+  scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) +
+   annotation_logticks() + geom_abline(slope = 1, intercept = 0, linetype = 'dashed') +
+  xlab('Predicted Induced Expression') + ylab('Actual Induced Expression') + labs(title = 'Using a neural network to predict induced expression \n Training set: 75% of library on -10/-35/Proximal/Distal \n Test set: remaining 25% of library')
+ggsave('Fig_2E.png', height = 8, width = 10) 
+
+```
+
+```{r}
+
+induce_combo %>%
+  ggplot() + geom_density(aes(normalized_RNA_exp_UnInduced_12), fill = 'dodgerblue4', alpha = 0.7) + geom_density(aes(normalized_RNA_exp_Induced_12), fill = 'firebrick1', alpha = 0.7) + facet_wrap(~Min_10+Min_35, labeller = label_wrap_gen(multi_line=FALSE)) + xlab("Expression") + scale_x_log10()
+ggsave('histogram.pdf', height = 8, width = 10)
+
+induce_combo$Proximal <-gsub("lac", "prox_lac", induce_combo$Proximal)
+
+induce_combo %>%
+  filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons') %>%
+  ggplot() + geom_histogram(aes(normalized_RNA_exp_UnInduced_12), fill = 'dodgerblue4', alpha = 0.7) + geom_histogram(aes(normalized_RNA_exp_Induced_12), fill = 'firebrick1', alpha = 0.7) + facet_wrap(~Proximal+Distal, labeller = label_wrap_gen(multi_line=FALSE)) #xlab("Expression") + scale_x_log10()
+ggsave('histogram_operator.pdf', height = 12, width = 20)
+```
+
+```{r}
 # COMPARISON OF SYMMETRY
-# with consensus -10/-35
+# with consensus -10/-35, shows right sym is always worst
+# 
 
 induce_combo$Proximal  <- with(induce_combo, reorder(Proximal,ratio, median))
 legend_ord <- levels(with(induce_combo, reorder(Proximal,-ratio, median)))
 
-p1 <- induce_combo %>%
-  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+induce_combo %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  #filter(Proximal == 'lacOscram', Distal == 'lacOscram') %>%
+  #group_by(Min_10, Min_35) %>%
+  #mutate(scram_exp = normalized_RNA_exp_UnInduced_12) %>%
+  #ungroup() %>%
+  #select(Min_10, Min_35, scram_exp) %>%
+  #left_join(induce_combo, ., by = c("Min_10", "Min_35")) %>%
+  #mutate(normalized_exp = normalized_RNA_exp_UnInduced_12/scram_exp) %>%
   filter(Proximal == 'lacO1' | Proximal == 'lacOsym' | Proximal == 'O1_rightSym') %>%
-  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12)) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 4) + scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression')
+  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12), outlier.shape = NA) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 1) + scale_color_manual(values = pal(10), name = 'Distal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression') + scale_y_log10()
 
 p2 <- induce_combo %>%
-  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  #filter(Proximal == 'lacOscram', Distal == 'lacOscram') %>%
+  #group_by(Min_10, Min_35) %>%
+  #mutate(scram_exp = normalized_RNA_exp_UnInduced_12) %>%
+  #ungroup() %>%
+  #select(Min_10, Min_35, scram_exp) %>%
+  #left_join(induce_combo, ., by = c("Min_10", "Min_35")) %>%
+  #mutate(normalized_exp = normalized_RNA_exp_UnInduced_12/scram_exp) %>%
   filter(Proximal == 'lacO2' | Proximal == 'O2_leftSym' | Proximal == 'O2_rightSym') %>%
-  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12)) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 4) + scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression') + scale_x_discrete(limits = c("O2_rightSym", "O2_leftSym", "lacO2"))
+  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12), outlier.shape = NA) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 1) + scale_color_manual(values = pal(10), name = 'Distal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression') + scale_x_discrete(limits = c("O2_rightSym", "O2_leftSym", "lacO2")) + scale_y_log10()
 
 p3 <- induce_combo %>%
-  filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons') %>%
+  #filter(Proximal == 'lacOscram', Distal == 'lacOscram') %>%
+  #group_by(Min_10, Min_35) %>%
+  #mutate(scram_exp = normalized_RNA_exp_UnInduced_12) %>%
+  #ungroup() %>%
+  #select(Min_10, Min_35, scram_exp) %>%
+  #left_join(induce_combo, ., by = c("Min_10", "Min_35")) %>%
+  #mutate(normalized_exp = normalized_RNA_exp_UnInduced_12/scram_exp) %>%
   filter(Proximal == 'lacO3' | Proximal == 'O3_leftSym' | Proximal == 'O3_rightSym') %>%
-  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12), outlier.shape = NA) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 4) + scale_color_manual(values = pal(10), name = 'Proximal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression') + scale_x_discrete(limits = c("O3_rightSym", "O3_leftSym", "lacO3"))
+  ggplot(., aes(x = Proximal)) + geom_boxplot(aes(y = normalized_RNA_exp_UnInduced_12), outlier.shape = NA) + geom_jitter(aes(color = Distal, y = normalized_RNA_exp_UnInduced_12), size = 1) + scale_color_manual(values = pal(10), name = 'Distal', breaks = legend_ord) + labs(x = 'Proximal Site', y = 'Basal Expression') + scale_x_discrete(limits = c("O3_rightSym", "O3_leftSym", "lacO3")) + scale_y_log10()
 
 plot_grid(p1, p2, p3, ncol = 3)
+#ggsave('symmetric.pdf', width = 18, height = 10)
 
 ```
 
 
+```{r}
+
+```
 
 
 

@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # set your working directory
-setwd("~/Desktop/induce_library/figs/")
+setwd("~/Desktop/DESKTOP/induce_library/figs/")
 ```
 
 ```{r}

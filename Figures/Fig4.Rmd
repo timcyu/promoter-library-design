@@ -17,14 +17,14 @@ output: html_document
 
 
 ```{r, include=FALSE}
-setwd("~/Desktop/induce_library/figs/")
+setwd("~/Desktop/DESKTOP/induce_library/figs/")
 
 ```
 
 ```{r, include=FALSE}
 
 library(viridis)
-library(plyr)
+#library(plyr)
 library("ggplot2")
 library("dplyr")
 library("tidyr")
@@ -185,59 +185,63 @@ plot_grid(a,b,c, ncol = 3)
 ggplot(filter(induce_multiple, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = log10(ratio/normalized_RNA_exp_UnInduced_12))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
   scale_fill_viridis(name = expression('log'[10]~frac('Induction Ratio', 'Basal Expression'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) +
   labs(title = 'Combinatorial Induction of Left/Right Distal Sites with Consensus -10/-35', x = 'Left Distal', y = 'Right Distal', size = 20) +
-  theme(panel.background = element_rect(fill = "gray40")) +
+  theme(panel.background = element_rect(fill = "gray40"))
   
-ggsave('Fig_4B.pdf', width = 10, height = 8)
+#ggsave('Fig_4B.pdf', width = 10, height = 8)
 
 ```
 
 
 ```{r}
 # COMBO vs MULTIPLE with same
-colnames(induce_combo)[colnames(induce_combo)=="Distal"] <- "Distal_right"
+colnames(induce_combo)[colnames(induce_combo) == "Distal"] <- "Distal_right"
 
 combo_multiple_comp <- left_join(induce_combo, induce_multiple, by = c("Distal_right", 'Min_10', "Min_35", "Proximal"))
 
 # remove NA ones
 combo_multiple_comp <- combo_multiple_comp[complete.cases(combo_multiple_comp), ] %>% filter(Min_10 == 'minus10cons' & Min_35 == 'minus35cons')
 
-install.packages("ggsignif")
-library(ggsignif)
+##install.packages("ggsignif")
+#library(ggsignif)
 
-ggplot(combo_multiple_comp, aes(x = Distal_left, y=normalized_RNA_exp_UnInduced_12.y/normalized_RNA_exp_UnInduced_12.x)) +
-  geom_boxplot(outlier.alpha = 0) +
-  geom_jitter(aes(color=Distal_right), alpha = .5, size = 2.5) +
-  #scale_fill_manual(values = pal5) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
-  scale_y_log10() +
-  geom_signif(comparisons = list(c("lacOscram", "lacO1"), c("lacOscram", "lacOsym")), y_position=c(0.8, 0.8), map_signif_level=TRUE) +
-  labs(title = 'Ratio_Multiple/Ratio_Induced \n by Left Distal Operator', 
-       y = 'Ratio', x = 'Left Distal Operator', size = 30) +
-  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
-  annotation_logticks(sides = 'l')
+#ggplot(combo_multiple_comp, aes(x = Distal_left, y=normalized_RNA_exp_UnInduced_12.y/normalized_RNA_exp_UnInduced_12.x)) +
+#  geom_boxplot(outlier.alpha = 0) +
+#  geom_jitter(aes(color=Distal_right), alpha = .5, size = 2.5) +
+#  #scale_fill_manual(values = pal5) +
+#  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 20), axis.text.y = element_text(size = 20)) +
+#  scale_y_log10() +
+#  geom_signif(comparisons = list(c("lacOscram", "lacO1"), c("lacOscram", "lacOsym")), y_position=c(0.8, 0.8), map_signif_level=TRUE) +
+#  labs(title = 'Ratio_Multiple/Ratio_Induced \n by Left Distal Operator', 
+#       y = 'Ratio', x = 'Left Distal Operator', size = 30) +
+#  scale_x_discrete(limits = c('lacOscram', 'lacO2', 'lacO3', 'lacO1', 'lacOsym')) + 
+#  annotation_logticks(sides = 'l')
 
 # left join (by = c("Distal, Proximal"))
 
 # boxplot, x axis is distal_left (01/combo, O2/combo ... )
 
+#tmp <- combo_multiple_comp %>% 
+#  filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+#  group_by(Distal_left, Distal_right) %>%
+#  dplyr::summarise(mean_diff = mean(ratio.y/ratio.x))
+
 combo_multiple_comp %>% 
   filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   group_by(Distal_left, Distal_right) %>%
-  mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
+  dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
   ungroup() %>%
-ggplot(., aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = mean_diff)) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
-  scale_fill_viridis(name = expression(frac('Multiple Induction', 'Combo Induction'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(title = 'Combinatorial Induction of Left/Right Distal Sites with Consensus -10/-35 and Proximal Osym/O1', x = 'Left Distal', y = 'Right Distal', size = 20) +
-  theme(panel.background = element_rect(fill = "gray40")) + 
-  geom_text(aes(label=signif(mean_diff, 3)), size=5)
-  ggsave('Fig_4B.pdf', width = 12, height = 8)
+  ggplot(., aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = mean_diff)) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+scale_fill_viridis(name = expression(frac('Multiple Induction', 'Combo Induction'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Left Distal', y = 'Right Distal', size = 20) +
+theme(panel.background = element_rect(fill = "gray40")) + 
+geom_text(aes(label=signif(mean_diff, 3)), size=5) +
+theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+
+ggsave('Fig_3A.png', width = 12, height = 8)
 
 ```
 
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## R Markdown
 
