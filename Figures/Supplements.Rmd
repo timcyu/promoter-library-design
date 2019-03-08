@@ -21,19 +21,19 @@ induce_distal$Distal <- with(induce_distal, reorder(Distal, ratio, median))
 ```
 
 ```{r}
-combo_scram_exp <- filter(induce_combo, Proximal == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons')$normalized_RNA_exp_UnInduced_12
+combo_scram_exp <- filter(induce_combo, Proximal == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons')$ratio
 
 combo_comp <- induce_combo %>%
   filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons', Distal == 'lacOscram') %>%
-  dplyr::mutate(norm_exp = normalized_RNA_exp_UnInduced_12/combo_scram_exp) %>%
+  dplyr::mutate(norm_exp = ratio/combo_scram_exp) %>%
   select(Library, Proximal, norm_exp) %>%
   filter(Proximal == 'lacO1' | Proximal == 'lacO2' | Proximal == 'lacO3' | Proximal == 'lacOsym' | Proximal == 'lacOscram')
 
-distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>% select(Offset, normalized_RNA_exp_UnInduced_12)
+distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>% select(Offset, ratio)
 
 distal_comp <- left_join(induce_distal, distal_scram_exp, by = 'Offset') %>%
   filter(Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
-  dplyr::mutate(norm_exp = normalized_RNA_exp_UnInduced_12.x/normalized_RNA_exp_UnInduced_12.y) %>%
+  dplyr::mutate(norm_exp = ratio.x/ratio.y) %>%
   select(Library, Proximal = Core, Distal, Offset, norm_exp) %>%
   unique(.)
 distal_comp <- distal_comp[!is.na(distal_comp$norm_exp),]
@@ -42,7 +42,7 @@ pal5 <- brewer.pal(n=5, name ='RdYlBu')
 distal_comp$Distal <- factor(distal_comp$Distal, levels = c('lacOscram','lacO3','lacO2','lacO1','lacOsym'))
 
 ggplot(distal_comp, aes(y = log2(norm_exp), fill = Distal, x = Proximal)) + 
-  geom_bar(position = "dodge", stat = 'identity') + 
+  geom_bar(position = "dodge", stat = 'identity', alpha = 0.9, color = 'black') + 
   #geom_boxplot(outlier.shape = NA) +
   #geom_jitter(aes(color = Distal)) +
   scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
@@ -51,9 +51,45 @@ ggplot(distal_comp, aes(y = log2(norm_exp), fill = Distal, x = Proximal)) +
   scale_fill_viridis(discrete = TRUE, name = 'Distal operator') +
   facet_wrap(~Offset) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
-  labs(x = 'Core operator', y = expression('log'[2]~'(Normalized uninduced expression)'))
-ggsave('Supp2.png', width = 20, height = 10)
+  labs(x = 'Core operator', y = expression('log'[2]~'(Normalized induction ratio)'))
+ggsave('Supp4.png', width = 20, height = 10)
 ```
+
+
+```{r}
+ggplot(filter(distal_comp, Offset == 22), aes(y = log2(norm_exp), fill = Distal, x = Proximal)) + 
+  geom_bar(position = "dodge", stat = 'identity', color = 'black') + 
+  #geom_boxplot(outlier.shape = NA) +
+  #geom_jitter(aes(color = Distal)) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
+  labs(x = 'Core', y = 'log2(Normalized uninduced expression)') + 
+#  scale_fill_manual(values = pal5) +
+  scale_fill_viridis(discrete = TRUE, name = 'Distal operator', alpha = 0.9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  labs(x = 'Core operator', y = expression('log'[2]~'(Normalized induction ratio)')) + geom_hline(yintercept=0, color = 'black', size = 0.5) + geom_hline(yintercept=2, linetype = 'dashed', color = 'red', size = 0.5) + geom_hline(yintercept=4, linetype = 'dashed', color = 'red', size = 0.5)
+
+```
+
+
+```{r}
+induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
+  group_by(Min_10, Min_35) %>%
+  dplyr::mutate(combo_ratio=mean(ratio),
+         combo_uninduced=mean(normalized_RNA_exp_UnInduced_12),
+         combo_svn = (combo_ratio/combo_uninduced)) %>%
+  select(Min_10, Min_35, combo_ratio, combo_uninduced, combo_svn) %>%
+  distinct() %>%
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_uninduced)), alpha = 0.9, color = 'black') +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'Basal Expression')) + theme(legend.title = element_text(size = 15)) +
+  labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
+  theme(panel.background = element_rect(fill = "gray40")) +
+  geom_text(aes(label=signif(combo_uninduced, 3)), size=5) + 
+  theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+ggsave('Supp2.pdf', width = 10, height = 7)
+```
+
+
 
 ```{r}
 # Supplement 1: Osym vs. O1
@@ -62,11 +98,11 @@ filler <- c("midnightblue", "orange")
 
 t1 <- induce_combo %>%
   filter(Distal == 'lacOsym', (Proximal == 'lacO1' | Proximal == 'lacOsym'), Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>% 
-  ggplot(aes(x = Proximal, y = normalized_RNA_exp_Induced_12)) + geom_bar(stat = 'identity', fill = filler, color = 'black') + ylab("Induced Expression")
+  ggplot(aes(x = Proximal, y = normalized_RNA_exp_Induced_12)) + geom_bar(stat = 'identity', fill = filler, color = 'black', alpha = 0.9) + ylab("Induced Expression")
 
 t2 <- induce_combo %>%
   filter(Distal == 'lacOsym', Proximal == 'lacO1' | Proximal == 'lacOsym', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
-  ggplot(aes(x = Proximal, y = normalized_RNA_exp_UnInduced_12)) + geom_bar(stat = 'identity', fill = filler, color = 'black') + ylab("Basal Expression")
+  ggplot(aes(x = Proximal, y = normalized_RNA_exp_UnInduced_12)) + geom_bar(stat = 'identity', fill = filler, color = 'black', alpha = 0.9) + ylab("Basal Expression")
 
 plot_grid(t1, t2) 
 ggsave('Supp1.png', height = 6, width = 8)
