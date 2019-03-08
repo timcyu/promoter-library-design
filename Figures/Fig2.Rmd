@@ -85,7 +85,7 @@ ggsave('Fig_2A.png', width = 10, height = 8)
 #demo(plotmath)
 #scram_ind <- filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons', )
 
-ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), aes(x = Proximal, y = Distal)) + geom_tile(aes(fill = log2(ratio)), color = 'black', alpha = 0.9) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
   scale_fill_viridis(name = expression('log'[2]~'(Induction Ratio)')) +
   labs(x = 'Proximal', y = 'Distal', size = 20) +
   theme(panel.background = element_rect(fill = "gray40")) +
@@ -93,7 +93,7 @@ ggplot(filter(induce_combo, Min_10 == 'minus10cons' & Min_35 == 'minus35cons'), 
   scale_x_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym")) + 
   scale_y_discrete(limits = c("lacOscram", "O3_leftSym", "lacO2", "O3_rightSym", "O1_rightSym", "O2_leftSym", "lacO3", "O2_rightSym", "lacO1", "lacOsym"))
 
-ggsave('Fig_2B.pdf', width = 10, height = 8)
+ggsave('Fig_2B.pdf', width = 10, height = 7)
 
 #induce_combo %>%
 #  filter(Min_10 == 'minus10cons' | Min_35 == 'minus35cons', Proximal == 'lacOscram', Distal == 'lacOscram') %>%
@@ -138,6 +138,7 @@ induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
 ggsave('Supp2.png', width = 10, height = 7)
 
+
 induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   group_by(Min_10, Min_35) %>%
   dplyr::mutate(combo_ratio=mean(ratio),
@@ -167,14 +168,14 @@ induce_combo %>% filter(Proximal == 'lacOsym' | Proximal == 'lacO1') %>%
   mutate(combo_ratio=mean(ratio)) %>%
   select(Min_10, Min_35, combo_ratio) %>%
   distinct() %>%
-  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_ratio))) +  
+  ggplot(aes(x = Min_10, y = Min_35)) +  geom_tile(aes(fill = log2(combo_ratio)), alpha = 0.9, color = 'black') +  
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
   scale_fill_viridis(name = expression('log'[2]~'Induction Ratio'), limits = c(0, 2.7)) + theme(legend.title = element_text(size = 15)) +
   labs(x = 'Minus 10', y = 'Minus 35', size = 30) +
   theme(panel.background = element_rect(fill = "gray40")) +
   geom_text(aes(label=signif(combo_ratio, 3)), size=5) +
   theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
-ggsave('Fig_2C.png', width = 10, height = 7)
+ggsave('Fig_2C.pdf', width = 10, height = 7)
 
 #plot_grid(a, b)
 

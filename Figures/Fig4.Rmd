@@ -230,13 +230,13 @@ combo_multiple_comp %>%
   group_by(Distal_left, Distal_right) %>%
   dplyr::mutate(mean_diff = mean(ratio.y/ratio.x)) %>%
   ungroup() %>%
-  ggplot(., aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = mean_diff)) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  ggplot(., aes(x = Distal_left, y = Distal_right)) + geom_tile(aes(fill = mean_diff), alpha = 0.9, color = 'black') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
 scale_fill_viridis(name = expression(frac('Multiple Induction', 'Combo Induction'))) + scale_x_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + scale_y_discrete(limits = c("lacOscram", "lacO3", 'lacO2', 'lacO1', 'lacOsym')) + labs(x = 'Left Distal', y = 'Right Distal', size = 20) +
 theme(panel.background = element_rect(fill = "gray40")) + 
 geom_text(aes(label=signif(mean_diff, 3)), size=5) +
 theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
 
-ggsave('Fig_3A.png', width = 12, height = 8)
+ggsave('Fig_3A.pdf', width = 12, height = 8)
 
 ```
 

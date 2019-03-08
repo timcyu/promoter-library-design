@@ -339,19 +339,21 @@ pal4 <- brewer.pal(n=4, name ='RdBu')
 
 gg1 <- steric_box %>%
   ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_UnInduced_12, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Basal Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+  geom_bar(position = "dodge", stat = 'identity', show.legend = FALSE) + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Basal Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
                   
 gg2 <- steric_box %>%
+  filter(Proximal == 'lacO1', Core == 'lacO1') %>%
   ggplot(., aes(fill = Min_10, y = ratio, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
+  geom_bar(position = 'dodge', stat = 'identity', alpha = 0.9, color = 'black') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induction Ratio', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))
 
 gg3 <- steric_box %>%
+  filter(Proximal == 'lacO1', Core == 'lacO1') %>%
   ggplot(., aes(fill = Min_10, y = normalized_RNA_exp_Induced_12, x = category)) +
-  geom_bar(position = "dodge", stat = 'identity') + scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))                                                   
+  geom_bar(position = 'dodge', stat = 'identity', alpha = 0.9, color = 'black') + 
+  scale_x_discrete(limits = c('no_up_ext_UV5', 'up_326x_ext_UV5', 'no_up_ext_10', 'up_326x_ext_10')) +   scale_fill_manual(values = pal4) + labs(y = 'Induced Expression', x = 'Regulatory element combination') + theme(axis.text.x = element_text(angle = 45, hjust = 1, size =10)) + theme(axis.text=element_text(size=14), axis.title=element_text(size = 14))                                                
 gg <- plot_grid(gg2, gg3)
-#title <- ggdraw() + draw_label("Optimizing Proximal-Core (STERIC) promoters by swapping out UP and extended -10 elements", fontface='bold')
 plot_grid(gg, ncol = 1, rel_heights=c(0.1, 1))
-ggsave('Fig_3C.png', width = 20, height = 8)                                                                                                                                                                                                
+ggsave('Fig_3C.pdf', width = 20, height = 8)                                                                                                                                                                                                
                                                                                                                                                                                                    
 
 ```
@@ -507,15 +509,40 @@ ggsave('lol.png', width = 20, height = 10)
 
 distal_scram_exp <- filter(induce_distal, Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22)$normalized_RNA_exp_UnInduced_12
 
-ggplot(filter(induce_distal, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22), aes(x = Core, y = Distal)) + geom_tile(aes(fill = log2(normalized_RNA_exp_UnInduced_12/distal_scram_exp))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
-  scale_fill_viridis(name = expression('log'[2]~'(Normalized uninduced expression)')) +
+ggplot(filter(induce_distal, Min_10 == 'minus10cons', Min_35 == 'minus35cons', Offset == 22), aes(x = Core, y = Distal)) + geom_tile(aes(fill = log2(ratio))) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  scale_fill_viridis(name = expression('log'[2]~'(Induction Ratio)')) +
   labs(x = 'Core', y = 'Distal', size = 20) +
   theme(panel.background = element_rect(fill = "gray40")) +
   #theme(axis.text=element_text(size=14), axis.title=element_text(size = 14)) +
   scale_x_discrete(limits = c("lacOscram",  "lacO3", "lacO2", "lacO1", "lacOsym")) + 
   scale_y_discrete(limits = c("lacOscram", "lacO3", "lacO2", "lacO1", "lacOsym"))
+ggsave('Fig_3B.png', width = 10, height = 8)
 
-#ggsave('Fig_2B.pdf', width = 10, height = 8)
+
+
+induce_distal %>%
+  filter(Core == 'lacOscram', Distal == 'lacOscram', Min_10 == 'minus10cons', Min_35 == 'minus35cons') %>%
+  ggplot(aes(x = Offset, y = normalized_RNA_exp_Induced_12)) + geom_bar(stat = 'identity')
+
+
+
+
+```
+```{r}
+ggplot(filter(distal_comp, Offset == 22), aes(y = log2(norm_exp), fill = Distal, x = Proximal)) + 
+  geom_bar(position = "dodge", stat = 'identity', color = 'black') + 
+  #geom_boxplot(outlier.shape = NA) +
+  #geom_jitter(aes(color = Distal)) +
+  scale_x_discrete(limits = c('lacOscram', 'lacO3', 'lacO2', 'lacO1', 'lacOsym')) +
+  labs(x = 'Core', y = 'log2(Normalized uninduced expression)') + 
+#  scale_fill_manual(values = pal5) +
+  scale_fill_viridis(discrete = TRUE, name = 'Distal operator', alpha = 0.9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15), axis.text.y = element_text(size = 15)) +
+  labs(x = 'Core operator', y = expression('log'[2]~'(Normalized induction ratio)')) + geom_hline(yintercept=0, color = 'black', size = 0.5) + geom_hline(yintercept=2, linetype = 'dashed', color = 'red', size = 0.5) + geom_hline(yintercept=4, linetype = 'dashed', color = 'red', size = 0.5)
+ggsave('Fig_3B.png', width = 13, height = 8)
+
+```
+
 
 
 ```
